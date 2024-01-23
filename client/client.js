@@ -13,21 +13,33 @@ displayView = function (id) {
 };
 
 refresh = function () {
-	toast = document.getElementById('toast');
-	toast.classList = [];
-
+	// first we reset our content div
 	document.getElementById('content').innerHTML = '';
+
+	// then we get our current saved token and user
 	const token = getToken();
 	const users = JSON.parse(localStorage.getItem('loggedinusers'));
+
 	if (token && users && users[token]) {
-		// logged in
+		// user is logged in
+		// update view and message display
 		displayView('profileView');
 		toast.classList.add('logged-in');
 
+		// we clear all our test data
 		clearHistory();
 		clearSearchResults();
+		// and insert our current data
 		updateProfileInformation(token);
 
+		// then we switch to the correct tab
+		const tab = sessionStorage.getItem('activeTab');
+		if (!tab || !PROFILE_TABS.includes(tab)) {
+			sessionStorage.setItem('activeTab', 'home');
+		}
+		changeTab(sessionStorage.getItem('activeTab'));
+
+		// and add some event listeners for the forms
 		document.password_reset.addEventListener('submit', (e) => {
 			e.preventDefault();
 			changePassword();
@@ -41,16 +53,20 @@ refresh = function () {
 			postMessage(token);
 		});
 	} else {
-		// not logged in
+		// user is not logged in
 		if (token) {
+			// we remove the token
 			localStorage.removeItem('token');
 		}
 		if (users) {
+			// and the logged in users
 			localStorage.setItem('loggedinusers', '{}');
 		}
 
+		// we display our sign up view
 		displayView('welcomeView');
 
+		// and add the event listeners for our forms
 		document.signup.addEventListener('submit', (e) => {
 			e.preventDefault();
 			signup();
@@ -63,15 +79,22 @@ refresh = function () {
 };
 
 window.onload = function () {
+	// this is for message display, needs to be done once per page load
+	toast = document.getElementById('toast');
+	toast.classList = [];
+
+	// on window load, we refresh the page to update our content div
 	refresh();
 };
 
 signup = function () {
 	const form = document.signup;
+	// first, we check if the password meets the criteria
 	if (!checkPassword(form)) {
 		return;
 	}
 
+	// then we put our data into a JS-object
 	const data = {
 		email: form.email.value,
 		password: form.password.value,
@@ -82,40 +105,57 @@ signup = function () {
 		country: form.country.value,
 	};
 
+	// and sign up the user
 	const res = serverstub.signUp(data);
 	if (res.success) {
+		// on success, we print a success message and sign in the user
 		toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
 		login(data.email, data.password);
 	} else {
+		// on error, we print the error message to the user
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
 		console.error('error signing up user', res.message);
 	}
 };
 
 login = function (email, password) {
+	// try to sign in the user
 	const res = serverstub.signIn(email, password);
+
 	if (res.success) {
+		// in case of success, we reset our tab to home, set the token and refresh the page
+		sessionStorage.setItem('activeTab', 'home');
 		localStorage.setItem('token', res.data);
 		refresh();
+
+		// also print out success message at the end
 		toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
 	} else {
+		// print error message if the login was not successful
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
 	}
 };
 
 logout = function () {
+	// user wants to log out
+	// so we get the token  and log out the user from the item
 	const token = getToken();
 	const res = serverstub.signOut(token);
-	// console.log(res);
 	if (res.success) {
+		// this should always succeed if the user didn't mess around with the local storage
 		localStorage.removeItem('token');
 	}
+
+	// we refresh our page
 	refresh();
+
+	// and send a confirmation message to the user
 	toast.classList.remove('logged-in');
 	toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
 };
 
 changePassword = function () {
+	// check the password requirements first
 	const form = document.password_reset;
 	if (form.password_new.value.length < MIN_LENGTH_PASSWORD) {
 		invalid(
@@ -125,17 +165,19 @@ changePassword = function () {
 		return;
 	}
 
+	// then change the password
 	const response = serverstub.changePassword(
 		getToken(),
 		form.password_old.value,
 		form.password_new.value
 	);
 
-	// console.log('changing password', response);
 	if (!response.success) {
+		// on error display error message
 		toastMessage(response.message, TOAST_MESSAGE.ERROR);
 		console.error(response.message);
 	} else {
+		// on success, show success message and empty the form
 		form.reset();
 		toastMessage(response.message, TOAST_MESSAGE.SUCCESS);
 		console.log(response.message);
@@ -143,6 +185,7 @@ changePassword = function () {
 };
 
 checkPassword = function (form) {
+	// check the password for matching values and min length
 	if (form.password.value !== form.password_repeat.value) {
 		invalid(form.password_repeat, 'Passwords must match!');
 		return false;
@@ -158,25 +201,31 @@ checkPassword = function (form) {
 };
 
 reloadMessages = function (token, email) {
+	// reload all the messages from the user with the given token and email
 	if (!token) {
 		token = getToken();
 	}
 	if (!email) {
 		email = document.getElementById('email').innerText;
 	}
+	// delete all messages
 	clearHistory();
 
+	// get all messages by user and mail
 	const res = serverstub.getUserMessagesByEmail(token, email);
 
+	// if there is an error, show it to the user
 	if (!res.success) {
 		console.error(res.message);
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
 		return;
 	}
 
+	// now get all the data
 	const data = res.data;
 	// console.log(data);
 
+	// and add it to the message history
 	const history = document.getElementById('history');
 	for (const message of data) {
 		const messageContainer = document.createElement('div');
@@ -194,33 +243,42 @@ reloadMessages = function (token, email) {
 
 		history.appendChild(messageContainer);
 	}
+	// inform user in case it's needed
 	// toastMessage('User messages updated!', TOAST_MESSAGE.SUCCESS);
 };
 
 invalid = function (element, message) {
+	// mark a field as invalid
 	element.setCustomValidity(message);
 	element.reportValidity();
 };
 
 postMessage = function (token, email) {
+	// we check if token and mail are given
 	if (!token) {
 		token = getToken();
 	}
 	if (!email) {
 		email = document.getElementById('email').innerText;
 	}
+
+	// then we retrieve the content
 	const content = document.post.message.value;
+	// and check if it's empty
 	if (!content || content.trim() === '') {
 		return;
 	}
 	// console.log(token, content, email);
+	// then we post the message
 	const res = serverstub.postMessage(token, content, email);
 	if (!res.success) {
+		// on error, we display an error message
 		console.error(res.message);
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
 		return;
 	}
 
+	// on success, we update all values and reload the messages
 	document.post.message.value = '';
 	reloadMessages(token);
 	toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
@@ -229,10 +287,17 @@ postMessage = function (token, email) {
 /*****
 	NAVIGATION
 *****/
-changeTab = function (tab) {
+changeTab = function (tab, resetProfile) {
+	// in case changeTab was called from clicking the tabs, resetProfile is not set, so we set it to true
+	if (resetProfile === undefined || resetProfile === null) {
+		resetProfile = true;
+	}
+
+	// we reset all the divs
 	for (t of PROFILE_TABS) {
 		document.getElementById(t).dataset.show = 'false';
 	}
+	// and reset all the navbar items
 	const tabItems = document.querySelectorAll('.navbar > ul > li');
 	for (item of tabItems) {
 		if (item.dataset.active === '') {
@@ -240,6 +305,15 @@ changeTab = function (tab) {
 		}
 	}
 
+	// then we reset the profile if needed
+	if (resetProfile && tab === 'home') {
+		updateProfileInformation(getToken());
+	}
+
+	// update the session storage (to stay on the correct tab even after browser refresh)
+	sessionStorage.setItem('activeTab', tab);
+
+	// and update our div and navbar item
 	document.querySelector(`.navbar > ul > li.${tab}`).dataset.active = '';
 	document.getElementById(tab).dataset.show = 'true';
 };
@@ -249,30 +323,38 @@ changeTab = function (tab) {
 *****/
 updateProfileInformation = function (token, email) {
 	// console.log(token, email);
+	// this is the profile on the home page
 	let response;
+	// first we get the active user
 	const activeUser = serverstub.getUserDataByToken(token);
 	if (email) {
+		// if email is set, we want to load a different user
 		response = serverstub.getUserDataByEmail(token, email);
 	} else {
 		response = activeUser;
 	}
+	// then we load the data
 	const data = response.data;
 
 	if (!response.success || !data) {
+		// if there was an error retrieving the messages, we display it to the user
 		console.error(response.message);
 		toastMessage(response.message, TOAST_MESSAGE.ERROR);
 		return;
 	}
 
+	// we then display or hide the return button (for getting back to the own profile)
 	const retButton = document.querySelector(
 		'#home > .personal_information > .return'
 	);
+	// based on the matching email
 	if (data.email !== activeUser.data.email) {
 		retButton.classList.remove('hidden');
 	} else {
 		retButton.classList.add('hidden');
 	}
 
+	// then we set all the profile information
 	document.getElementById(
 		'fullname'
 	).innerText = `${data.firstname} ${data.familyname}`;
@@ -282,14 +364,17 @@ updateProfileInformation = function (token, email) {
 		'location'
 	).innerText = `${data.city}, ${data.country}`;
 
+	// and update the messages
 	reloadMessages(token);
 };
 
 clearSearchResults = function () {
+	// this just empties the search results
 	document.getElementById('search_results').innerHTML = '';
 };
 
 clearHistory = function () {
+	// this just empties the messages
 	document.getElementById('history').innerHTML = '';
 };
 
@@ -297,16 +382,23 @@ clearHistory = function () {
 	SEARCH USER
 ****/
 searchUser = function (token) {
+	// in case we want to search for a user
+	// we first get the searched value
 	const search = document.search.searchbar.value;
+
+	// then we search if a user with that email exists
 	const response = serverstub.getUserDataByEmail(token, search);
 	if (!response.success) {
+		// if not, we show an error
 		console.error(response.message);
 		document.getElementById('search_results').innerText = response.message;
 		toastMessage(response.message, TOAST_MESSAGE.ERROR);
 		return;
 	}
+	// if data was returned, we check it
 	const data = response.data;
 	if (!data) {
+		// no data means the search somehow still failed, so we still display an error
 		console.error('No data returned!');
 		document.getElementById('search_result').innerText =
 			'Search failed, please try again!';
@@ -314,15 +406,15 @@ searchUser = function (token) {
 		return;
 	}
 
+	// we update the search field to show the new user
 	const container = document.createElement('div');
 	container.className = 'user';
 	container.innerHTML = `${data.firstname} ${data.familyname}, ${data.email}`;
 	container.addEventListener('click', () => {
 		// console.log('click', data);
 		updateProfileInformation(getToken(), data.email);
-		changeTab('home');
+		changeTab('home', false);
 	});
-
 	document.getElementById('search_results').innerHTML = '';
 	document.getElementById('search_results').appendChild(container);
 };
@@ -333,6 +425,7 @@ searchUser = function (token) {
 const TOAST_MESSAGE = {SUCCESS: 'success', ERROR: 'error', INFO: 'info'};
 
 toastMessage = function (message, type) {
+	// super simple toast messager
 	// console.log(typeof type);
 	if (typeof type === 'string') {
 		toast.classList.add(type.toLowerCase());
