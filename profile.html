@@ -1,0 +1,109 @@
+<html>
+	<head>
+		<link href="client.css" type="text/css" rel="stylesheet" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap"
+			rel="stylesheet"
+		/>
+
+		<script
+			src="https://kit.fontawesome.com/531793c136.js"
+			crossorigin="anonymous"
+		></script>
+	</head>
+	<body>
+		<div class="navbar">
+			<ul>
+				<li class="home" onclick="changeTab('home')" data-active>Home</li>
+				<li class="browse" onclick="changeTab('browse')">Browse</li>
+				<li class="account" onclick="changeTab('account')">Account</li>
+			</ul>
+		</div>
+		<div class="content">
+			<div id="home" class="container" data-show="true">
+				<div class="personal_information">
+					<div
+						class="return hidden"
+						onclick="updateProfileInformation(getToken())"
+					>
+						<i class="fa-solid fa-arrow-left fa-xl"></i>
+					</div>
+					<div class="data">
+						<span id="fullname">Test Name</span>
+						<span id="gender">Male</span>
+						<br />
+						<span id="email">test.mail@test.com</span>
+						<br />
+						located in <span id="location">Linköping, Sweden</span>
+					</div>
+				</div>
+				<div class="messages">
+					<div class="new_message">
+						<form name="post">
+							<textarea
+								rows="5"
+								name="message"
+								placeholder="Post your message here"
+							></textarea>
+							<button type="submit">Post</button>
+						</form>
+					</div>
+					<div class="reload_messages">
+						<button type="button" onclick="reloadMessages()">
+							Reload messages
+						</button>
+					</div>
+					<div class="message_history" id="history">
+						<div id="example_message" class="message">
+							<div class="profile_information">
+								<span>Test user</span> posted
+							</div>
+							<div class="message_content">
+								This is an example message<br />
+								With a linebreak in it that is longer than it should be thus it
+								needs to be wrapped inside the div
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="browse" class="container" data-show="true">
+				<h2>Browse users</h2>
+				<form name="search">
+					<input type="text" name="searchbar" placeholder="Search for user" />
+					<button type="submit">Search</button>
+				</form>
+				<div class="users" id="search_results">
+					<div id="example_result" class="user">
+						<span class="fullname">Test user</span>,
+						<span class="email">test@mail.com</span>
+					</div>
+				</div>
+			</div>
+			<div id="account" class="container" data-show="false">
+				<h2>Your account</h2>
+
+				<h3>Reset password</h3>
+				<form name="password_reset" class="password-reset">
+					<label for="pw-reset-old">Old Password</label>
+					<input type="password" name="password_old" id="pw-reset-old" />
+
+					<label for="pw-reset-new">New Password</label>
+					<input
+						type="password"
+						name="password_new"
+						id="pw-reset-new"
+						oninput="this.setCustomValidity('')"
+					/>
+
+					<button type="submit">Reset password</button>
+				</form>
+
+				<h3>Sign out</h3>
+				<button type="button" onclick="logout()">Sign out</button>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,227 @@
+html, body {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  margin: 0;
+}
+
+#content {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+}
+
+#toast {
+  position: absolute;
+  width: fit-content;
+  top: 15px;
+  right: 15px;
+  display: none;
+
+  background: dodgerblue;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+#toast.logged-in {
+  margin-top: 50px;
+}
+#toast.error {
+  background: lightcoral;
+}
+#toast.success {
+  background: seagreen;
+}
+
+#toast.show {
+  display: block;
+  box-shadow: 0px 0px 10px 3px #898989;
+}
+
+.hidden, [data-show="false"], .container[data-show="false"] {
+  display: none;
+}
+
+body, body * {
+  font-family: 'Roboto';
+  font-size: 0.9rem;
+}
+
+/***
+  WELCOME PAGE
+***/
+.container {
+  margin: 100px auto 0 auto;
+  width: 600px;
+  height: 400px;
+
+  display: flex;
+  column-gap: 10px;
+}
+
+/*
+.container div, .container form {
+  outline: 1px solid black;
+}
+*/
+
+.logo {
+  width: 340px;
+}
+
+.login-container {
+  width: 250px;
+  display: flex;
+  row-gap: 10px;
+  flex-direction: column;
+}
+
+.login-container > form {
+  min-height: 100px;
+
+  margin-bottom: 0;
+  display: grid;
+  justify-content: space-between;
+  align-content: center;
+  row-gap: 5px;
+  grid-template-columns: auto 150px;
+  position: relative;
+}
+
+.login-container > #signup {
+  align-content: flex-start;
+  
+  flex-grow: 1;
+}
+
+.login-container > form > button {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+.login-container > form h3 {
+  grid-column: span 2;
+  text-align: center;
+  margin: .8em 0;
+}
+
+/***
+  PROFILE PAGE
+***/
+
+.content > .container {
+  flex-direction: column;
+  margin-top: 0;
+  height: calc(100vh - 50px);
+}
+
+.navbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+
+  background: #1ec3c3;
+}
+.navbar ul {
+  list-style-type: none;
+  
+  width: 50%;
+  height: 50px; 
+  padding: 0;
+  margin: 0;
+  
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: nowrap;
+  flex-direction: row;
+}
+
+.navbar li {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: center;
+  justify-content: center;
+}
+.navbar li[data-active] {
+  background: #189999;
+}
+.navbar > ul > li:hover {
+  background: #42dfdf;
+  cursor: pointer;
+}
+
+.content {
+  margin-top: 50px;
+}
+
+.new_message textarea {
+  resize: none;
+  width: 100%;
+}
+.new_message button {
+  width: 100%;
+}
+
+.profile_information {
+  color: #666;
+}
+.message .message_content {
+  font-size: 1.1rem;
+}
+.messages {
+  overflow-y: auto;
+}
+
+/**
+  PERSONAL INFORMATION
+**/
+.personal_information {
+  margin-bottom: 10px;
+  margin-top: 1em;
+
+  display: flex;
+  column-gap: 10px;
+  align-items: center;
+}
+.return {
+  cursor: pointer;
+}
+#fullname {
+  font-size: 1.5rem;
+}
+#gender {
+  color: #666;
+}
+
+.reload_messages button {
+  width: 100%;
+}
+
+.message_history .message {
+  width: calc(100% - 22px);
+  padding: 10px;
+  border: 1px solid #666;
+  margin-top: 5px;
+}
+
+.users > .user {
+  font-size: 1.15rem;
+}
+.users > .user:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/***
+  ACCOUNT TAB
+***/
+.password-reset {
+  display: grid;
+  row-gap: 5px;
+}
