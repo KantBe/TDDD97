@@ -423,6 +423,7 @@ searchUser = function (token) {
 	TOAST MESSAGES
 *****/
 const TOAST_MESSAGE = {SUCCESS: 'success', ERROR: 'error', INFO: 'info'};
+let timeoutId;
 
 toastMessage = function (message, type) {
 	// super simple toast messager
@@ -435,8 +436,12 @@ toastMessage = function (message, type) {
 	toast.innerText = message;
 	toast.classList.add('show');
 
-	setTimeout(() => {
+	if (timeoutId) {
+		clearInterval(timeoutId);
+	}
+	timeoutId = setTimeout(() => {
 		toast.classList.remove('show');
 		toast.classList.remove(type.toLowerCase());
+		timeoutId = undefined;
 	}, 1500);
 };
