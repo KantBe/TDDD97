@@ -71,7 +71,7 @@ refresh = function () {
 			e.preventDefault();
 			signup();
 		});
-		document.login.addEventListener('submit', (e) => {
+		document.login.addEventListener('submit', function (e) {
 			e.preventDefault();
 			login(document.login.email.value, document.login.password.value);
 		});
@@ -157,11 +157,7 @@ logout = function () {
 changePassword = function () {
 	// check the password requirements first
 	const form = document.password_reset;
-	if (form.password_new.value.length < MIN_LENGTH_PASSWORD) {
-		invalid(
-			form.password_new,
-			`Password must be at least ${MIN_LENGTH_PASSWORD} characters long!`
-		);
+	if (!checkPassword(form)) {
 		return;
 	}
 
@@ -169,18 +165,18 @@ changePassword = function () {
 	const response = serverstub.changePassword(
 		getToken(),
 		form.password_old.value,
-		form.password_new.value
+		form.password.value
 	);
 
-	if (!response.success) {
-		// on error display error message
-		toastMessage(response.message, TOAST_MESSAGE.ERROR);
-		console.error(response.message);
-	} else {
+	if (response.success) {
 		// on success, show success message and empty the form
 		form.reset();
 		toastMessage(response.message, TOAST_MESSAGE.SUCCESS);
 		console.log(response.message);
+	} else {
+		// on error display error message
+		toastMessage(response.message, TOAST_MESSAGE.ERROR);
+		console.error(response.message);
 	}
 };
 
@@ -200,14 +196,13 @@ checkPassword = function (form) {
 	return true;
 };
 
-reloadMessages = function (token, email) {
+reloadMessages = function (token) {
 	// reload all the messages from the user with the given token and email
 	if (!token) {
 		token = getToken();
 	}
-	if (!email) {
-		email = document.getElementById('email').innerText;
-	}
+	email = document.getElementById('email').innerText;
+
 	// delete all messages
 	clearHistory();
 
@@ -223,7 +218,7 @@ reloadMessages = function (token, email) {
 
 	// now get all the data
 	const data = res.data;
-	// console.log(data);
+	console.log(data);
 
 	// and add it to the message history
 	const history = document.getElementById('history');
@@ -244,7 +239,7 @@ reloadMessages = function (token, email) {
 		history.appendChild(messageContainer);
 	}
 	// inform user in case it's needed
-	// toastMessage('User messages updated!', TOAST_MESSAGE.SUCCESS);
+	toastMessage('User messages updated!', TOAST_MESSAGE.SUCCESS);
 };
 
 invalid = function (element, message) {
@@ -279,7 +274,7 @@ postMessage = function (token, email) {
 	}
 
 	// on success, we update all values and reload the messages
-	document.post.message.value = '';
+	document.post.reset();
 	reloadMessages(token);
 	toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
 };
