@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import json, re
 
 from uuid import uuid4
@@ -41,14 +41,14 @@ def signin():
     response['success'] = success
     response['message'] = message
     response['data'] = auth_token if auth_token else ''
-    return json.dumps(response)
+    return jsonify(response)
 
 @app.get('/user_info/<username>')
 def get_all_user_info(username):
     response = {}
     response['info'] = database_helper.get_all_user_info(username)
     response['session'] = database_helper.get_sessions_by_user(username)
-    return json.dumps(response)
+    return jsonify(response)
 
 @app.post('/sign_up/')
 def signup():
@@ -76,7 +76,7 @@ def signup():
     response = {}
     response['success'] = success
     response['message'] = message
-    return json.dumps(response)
+    return jsonify(response)
 
 @app.get('/sign_out/')
 def signout():
@@ -105,7 +105,7 @@ def signout():
     response = {}
     response['success'] = success
     response['message'] = message
-    return json.dumps(response)
+    return jsonify(response)
 
 @app.get('/change_password/')
 def change_password():
@@ -137,13 +137,12 @@ def change_password():
     response = {}
     response['success'] = success
     response['message'] = message
-    return json.dumps(response)
+    return jsonify(response)
     
 
 ###########################
 # HELPER FUNCTIONS
 ###########################
-
 def check_keys(keys, data):
     """
     Checks if data contains the given keys.
