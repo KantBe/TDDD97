@@ -17,7 +17,7 @@
 		<div class="navbar">
 			<ul>
 				<li class="home" onclick="changeTab('home')" data-active>Home</li>
-				<li class="browse" onclick="changeTab('browse')">Browse</li>
+				<li class="browse" onclick="changeTab('browse')" data-active>Browse</li>
 				<li class="account" onclick="changeTab('account')">Account</li>
 			</ul>
 		</div>
@@ -85,9 +85,9 @@
 			<div id="account" class="container" data-show="false">
 				<h2>Your account</h2>
 
-				<h3>Reset password</h3>
+				<h3>Change password</h3>
 				<form name="password_reset" class="password-reset">
-					<label for="pw-reset-old">Old Password</label>
+					<label for="pw-reset-old">Current Password</label>
 					<input type="password" name="password_old" id="pw-reset-old" />
 
 					<label for="pw-reset-new">New Password</label>

@@ -16,7 +16,9 @@
 		></script>
 	</head>
 	<body>
-		<div id="content"></div>
+		<div id="content">
+			<p>hello world</p>
+		</div>
 		<script type="text/view" id="welcomeView">
 			<div class="container">
 			  <div class="logo">
@@ -142,9 +144,9 @@
 				<div id="account" class="container" data-show="false">
 					<h2>Your account</h2>
 
-					<h3>Reset password</h3>
+					<h3>Change password</h3>
 					<form name="password_reset" class="password-reset">
-						<label for="pw-reset-old">Old Password</label>
+						<label for="pw-reset-old">Current Password</label>
 						<input type="password" name="password_old" id="pw-reset-old" />
 
 						<label for="pw-reset-new">New Password</label>
@@ -155,7 +157,7 @@
 							oninput="this.setCustomValidity('')"
 						/>
 
-						<button type="submit">Reset password</button>
+						<button type="submit">Change password</button>
 					</form>
 
 					<h3>Sign out</h3>
