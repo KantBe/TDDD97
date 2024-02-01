@@ -1,5 +1,5 @@
 from flask import Flask, request
-import json
+import json, re
 
 from uuid import uuid4
 
@@ -58,10 +58,18 @@ def signup():
     else:
         data = {}
     success, message = check_keys(SIGNUP_KEYS, data)
+
+    if success:
+        # check if the data fields are valid
+        success, message = validate_signup_data(data)
+        if success:
+            success, message = validate_password(data['password'])
     
-    if (success):
-        # TODO: check if all field's values are correct
-        data['password'] = database_helper.encrypt_password(data['password'].encode('utf-8')).decode('utf-8')
+    if success:
+        # save the user and encrypt the password
+        data['password'] = database_helper.encrypt_password(\
+                data['password'].encode('utf-8')\
+            ).decode('utf-8')
         # print(data)
         success, message = database_helper.save_user(data)
 
@@ -99,12 +107,83 @@ def signout():
     response['message'] = message
     return json.dumps(response)
 
+@app.get('/change_password/')
+def change_password():
+    if request.data:
+        data = json.loads(request.data)
+    else:
+        data = {}
+
+    success, message = check_keys(['token', 'oldpassword', 'newpassword'], data)
+
+    if success:
+        up = database_helper.get_user_and_password_by_token(data['token'])
+        if up:
+            user, password = up
+            success = database_helper.check_password(data['oldpassword'], password)
+            
+            if success:
+                success, message = validate_password(data['newpassword'])
+                if success:
+                    password = database_helper.encrypt_password(password).decode('utf-8')
+                    database_helper.update_password_by_username(user, password)
+                    message = 'Password updated successfully'
+            else:
+                message = 'Wrong password provided'
+        else:
+            success = False
+            message = 'Invalid token'
+
+    response = {}
+    response['success'] = success
+    response['message'] = message
+    return json.dumps(response)
+    
+
+###########################
+# HELPER FUNCTIONS
+###########################
+
 def check_keys(keys, data):
-    missing_keys = [key for key in keys if key not in data.keys()]
+    """
+    Checks if data contains the given keys.
+    returns (False, <error message>) if there are keys missing, else (True, '')
+    """
+    missing_keys = [key for key in keys if (key not in data.keys())]
 
     success = not missing_keys
     message = '' if success else 'Invalid request! Missing the following data: ' + ', '.join(missing_keys)
     return (success, message)
 
 def generate_token():
+    """
+    Generates and returns an auth token
+    """
     return str(uuid4())
+
+def validate_signup_data(data):
+    """
+    Checks whether the signup data is valid (e.g. empty fields or invalid email)
+    returns (False, <error message>) for invalid data, else (True, '')
+    """
+    for key in SIGNUP_KEYS:
+        if len(data[key].trim()) == 0:
+            return (False, key + ' is empty')
+    if not re.match(r'.+@.+', data['email']):
+        return (False, 'Email is not valid')
+    if data['gender'].lower() not in ['male', 'female', 'other']:
+        return (False, 'Gender is not valid')
+    else:
+        data['gender'] = data['gender'].upper()
+    
+    return (True, '')
+
+def validate_password(password):
+    """
+    Checks if the password is of valid length
+    returns (False, 'Password is not long enough') if not, (True, '') if it is
+    """
+    print(len(password), password)
+    if len(password) < 8:
+        return (False, 'Password is not long enough')
+    return (True, '')

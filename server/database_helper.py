@@ -24,7 +24,7 @@ def init_db(app):
         db.commit()
 
 def query_db(query, args=(), one=False, commit=False):
-    print(query, args, type(args))
+    print(query, args)
     cur = get_db().cursor()
     cur.execute(query, args)
     rv = cur.fetchall()
@@ -78,6 +78,13 @@ def get_user_by_username(username):
 def get_user_and_password_by_username(username):
     return query_db("SELECT username, password FROM user WHERE username LIKE '%s'" % (username), one=True)
 
+def get_user_and_password_by_token(token):
+    return query_db("SELECT u.username, u.password FROM user u "\
+        + "JOIN user_session us ON us.user = u.username WHERE us.token LIKE '%s'" % (token), one=True)
+
+def update_password_by_username(username, password):
+    return query_db("UPDATE user SET password = '%s' WHERE username LIKE '%s'" % (password, username), commit=True)
+
 def get_all_user_info(username):
     return query_db("SELECT * FROM user WHERE username LIKE '%s'" % (username), one=True)
 
@@ -85,7 +92,7 @@ def get_sessions_by_user(username):
     return query_db("SELECT * FROM user_session WHERE user LIKE '%s'" % username, one=False)
 
 def get_session_by_token(token):
-    return query_db("SELECT * FROM user_session WHERE token LIKE '%s'" % token, one=True)
+    return query_db("SELECT * FROM user_session WHERE token LIKE '%s'" % token, one=True)#
 
 def delete_session_by_user(username):
     sql = "DELETE FROM user_session WHERE user LIKE '%s' AND expires <= datetime('now')" % (username)
@@ -103,6 +110,7 @@ def encrypt_password(password):
 def check_password(password, encrypted_password):
     if (type(password) is str):
         password = password.encode('utf-8')
-    if type(encrypted_password is str):
+    if type(encrypted_password) is str:
         encrypted_password = encrypted_password.encode('utf-8')
+    print(password, encrypted_password)
     return bcrypt.checkpw(password, encrypted_password)
