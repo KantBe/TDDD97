@@ -157,11 +157,7 @@ logout = function () {
 changePassword = function () {
 	// check the password requirements first
 	const form = document.password_reset;
-	if (form.password_new.value.length < MIN_LENGTH_PASSWORD) {
-		invalid(
-			form.password_new,
-			`Password must be at least ${MIN_LENGTH_PASSWORD} characters long!`
-		);
+	if (!checkPassword(form)) {
 		return;
 	}
 
@@ -169,7 +165,7 @@ changePassword = function () {
 	const response = serverstub.changePassword(
 		getToken(),
 		form.password_old.value,
-		form.password_new.value
+		form.password.value
 	);
 
 	if (response.success) {
