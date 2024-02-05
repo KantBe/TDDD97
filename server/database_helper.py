@@ -33,9 +33,13 @@ def query_db(query, args=(), one=False, commit=False):
     cur.close()
     return (rv[0] if rv else None) if one else rv
 
+
+###########
+#   USER
+###########
+
 def save_user(user):
-    existing_user = get_user_by_username(user['email'])
-    if existing_user:
+    if user_exists(user['email']):
         return (False, 'User with this email already exists')
     
     user = (user['email'], user['password'], user['firstname'], user['familyname'], user['gender'], user['city'], user['country'])
@@ -45,35 +49,11 @@ def save_user(user):
     get_db().commit()
     return (True, 'User created successfully')
 
-def login_user(username, password):
-    # up = username + password
-    up = get_user_and_password_by_username(username)
-    
-    if up:
-        username, checked_password = up
-        success = (check_password(password, checked_password))
-        message = 'User signed in successfully'
-        if not success:
-            message = 'Invalid password'
-    else:
-        success = False
-        message = 'Invalid username'
-    return (success, message)
-
-def store_token(token, user):
-    """
-    This method is called if the login was successfully, so the token is stored successfully.
-    
-    To keep the stored data minimal, we also delete the token at the very beginning.
-    """
-    delete_session_by_user(user)
-    sql = "INSERT INTO user_session(token, user, expires) VALUES(?, ?, ?)"
-    data = (token, user, datetime.datetime.now() + datetime.timedelta(days=1))
-    query_db(sql, args=data, commit=True)
-    return (True, 'Token stored in database')
-
 def get_user_by_username(username):
     return query_db("SELECT username FROM user WHERE username LIKE '%s'" % (username), one=True)
+
+def user_exists(username):
+    return True if get_user_by_username(username) else False
 
 def get_user_and_password_by_username(username):
     return query_db("SELECT username, password FROM user WHERE username LIKE '%s'" % (username), one=True)
@@ -88,6 +68,22 @@ def update_password_by_username(username, password):
 def get_all_user_info(username):
     return query_db("SELECT * FROM user WHERE username LIKE '%s'" % (username), one=True)
 
+#############
+#   SESSION
+#############
+
+def store_token(token, user):
+    """
+    This method is called if the login was successfully, so the token is stored successfully.
+    
+    To keep the stored data minimal, we also delete the token at the very beginning.
+    """
+    delete_session_by_user(user)
+    sql = "INSERT INTO user_session(token, user, expires) VALUES(?, ?, ?)"
+    data = (token, user, datetime.datetime.now() + datetime.timedelta(days=1))
+    query_db(sql, args=data, commit=True)
+    return (True, 'Token stored in database')
+
 def get_sessions_by_user(username):
     return query_db("SELECT * FROM user_session WHERE user LIKE '%s'" % username, one=False)
 
@@ -101,16 +97,14 @@ def delete_session_by_user(username):
 
 def delete_session_by_token(token):
     query_db("DELETE FROM user_session WHERE token = '%s'" % (token), commit=True)
+    return
 
-def encrypt_password(password):
-    if (type(password) is str):
-        password = password.encode('utf-8')
-    return bcrypt.hashpw(password, bcrypt.gensalt())
+###########
+#   POSTS
+###########
 
-def check_password(password, encrypted_password):
-    if (type(password) is str):
-        password = password.encode('utf-8')
-    if type(encrypted_password) is str:
-        encrypted_password = encrypted_password.encode('utf-8')
-    print(password, encrypted_password)
-    return bcrypt.checkpw(password, encrypted_password)
+def get_messages_by_user(user):
+    return query_db("SELECT writer, posttext FROM post WHERE user LIKE '%s' ORDER BY id ASC" % (user))
+
+def post_message(writer, message, user):
+    return query_db("INSERT INTO post(writer, posttext, user) VALUES(?, ?, ?)", args=(writer, message, user), commit=True)

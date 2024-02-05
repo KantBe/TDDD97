@@ -9,12 +9,13 @@ CREATE TABLE IF NOT EXISTS user(
     PRIMARY KEY(username)
 );
 
-CREATE TABLE IF NOT EXISTS posts(
-    id  INT,
-    writer VARCHAR(50),
+CREATE TABLE IF NOT EXISTS post(
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    writer   VARCHAR(50),
+    user     VARCHAR(50),
     posttext VARCHAR(255),
-    PRIMARY KEY(id),
     FOREIGN KEY(writer) REFERENCES user(username)
+    FOREIGN KEY(user)   REFERENCES user(username)
 );
 
 CREATE TABLE IF NOT EXISTS user_session(
