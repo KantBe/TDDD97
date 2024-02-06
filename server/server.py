@@ -66,7 +66,7 @@ def signup():
                 data['password'].encode('utf-8')\
             ).decode('utf-8')
         # print(data)
-        success, message = database_helper.save_user(data)
+        success, message = save_user(data)
 
     response = {}
     response['success'] = success
@@ -146,7 +146,7 @@ def get_user_messages_by_email():
 @app.post('/post_message/')
 def post_message():
     data = request.get_json()
-    database_helper.post_message(data['writer'], data['message'], data['user'])
+    database_helper.insert_message(data['writer'], data['message'], data['user'])
     
     response = {}
     response['success'] = True
@@ -290,9 +290,17 @@ def get_user_messages(token: str, _user: str | None=None) -> tuple[bool, str, li
     if _user and not database_helper.user_exists(_user):
         return (False, 'No user with this email exists', messages)
     
-    raw_messages = database_helper.get_messages_by_user(_user if _user else user)
+    raw_messages = database_helper.get_messages_writer_and_text_by_user(_user if _user else user)
     message = 'Successfully retreived messages for user ' + user
     for m in raw_messages:
         messages.append({'writer': m[0], 'message': m[1]})
 
     return (success, message, messages)
+
+def save_user(user) -> tuple[bool, str]:
+    if database_helper.user_exists(user['email']):
+        return (False, 'User with this email already exists')
+    
+    user = (user['email'], user['password'], user['firstname'], user['familyname'], user['gender'], user['city'], user['country'])
+    database_helper.insert_user(user)
+    return (True, 'User created successfully')

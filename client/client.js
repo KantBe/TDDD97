@@ -22,60 +22,68 @@ refresh = function () {
 
 	if (token && users && users[token]) {
 		// user is logged in
-		// update view and message display
-		displayView('profileView');
-		toast.classList.add('logged-in');
-
-		// we clear all our test data
-		clearHistory();
-		clearSearchResults();
-		// and insert our current data
-		updateProfileInformation(token);
-
-		// then we switch to the correct tab
-		const tab = sessionStorage.getItem('activeTab');
-		if (!tab || !PROFILE_TABS.includes(tab)) {
-			sessionStorage.setItem('activeTab', 'home');
-		}
-		changeTab(sessionStorage.getItem('activeTab'));
-
-		// and add some event listeners for the forms
-		document.password_reset.addEventListener('submit', (e) => {
-			e.preventDefault();
-			changePassword();
-		});
-		document.search.addEventListener('submit', (e) => {
-			e.preventDefault();
-			searchUser(token);
-		});
-		document.post.addEventListener('submit', (e) => {
-			e.preventDefault();
-			postMessage(token);
-		});
+		loadProfile(token);
 	} else {
 		// user is not logged in
-		if (token) {
-			// we remove the token
-			localStorage.removeItem('token');
-		}
-		if (users) {
-			// and the logged in users
-			localStorage.setItem('loggedinusers', '{}');
-		}
-
-		// we display our sign up view
-		displayView('welcomeView');
-
-		// and add the event listeners for our forms
-		document.signup.addEventListener('submit', (e) => {
-			e.preventDefault();
-			signup();
-		});
-		document.login.addEventListener('submit', function (e) {
-			e.preventDefault();
-			login(document.login.email.value, document.login.password.value);
-		});
+		loadLoginPage(token, users);
 	}
+};
+
+loadProfile = function (token) {
+	// update view and message display
+	displayView('profileView');
+	toast.classList.add('logged-in');
+
+	// we clear all our test data
+	clearHistory();
+	clearSearchResults();
+	// and insert our current data
+	updateProfileInformation(token);
+
+	// then we switch to the correct tab
+	const tab = sessionStorage.getItem('activeTab');
+	if (!tab || !PROFILE_TABS.includes(tab)) {
+		sessionStorage.setItem('activeTab', 'home');
+	}
+	changeTab(sessionStorage.getItem('activeTab'));
+
+	// and add some event listeners for the forms
+	document.password_reset.addEventListener('submit', (e) => {
+		e.preventDefault();
+		changePassword();
+	});
+	document.search.addEventListener('submit', (e) => {
+		e.preventDefault();
+		searchUser(token);
+	});
+	document.post.addEventListener('submit', (e) => {
+		e.preventDefault();
+		postMessage(token);
+	});
+};
+
+loadLoginPage = function (token, users) {
+	if (token) {
+		// we remove the token
+		localStorage.removeItem('token');
+	}
+	if (users) {
+		// and the logged in users
+		localStorage.setItem('loggedinusers', '{}');
+	}
+
+	// we display our sign up view
+	displayView('welcomeView');
+
+	// and add the event listeners for our forms
+	document.signup.addEventListener('submit', (e) => {
+		e.preventDefault();
+		signup();
+	});
+	document.login.addEventListener('submit', (e) => {
+		e.preventDefault();
+		login(document.login.email.value, document.login.password.value);
+	});
 };
 
 window.onload = function () {
@@ -114,7 +122,6 @@ signup = function () {
 	} else {
 		// on error, we print the error message to the user
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
-		console.error('error signing up user', res.message);
 	}
 };
 
@@ -172,11 +179,9 @@ changePassword = function () {
 		// on success, show success message and empty the form
 		form.reset();
 		toastMessage(response.message, TOAST_MESSAGE.SUCCESS);
-		console.log(response.message);
 	} else {
 		// on error display error message
 		toastMessage(response.message, TOAST_MESSAGE.ERROR);
-		console.error(response.message);
 	}
 };
 
@@ -211,14 +216,12 @@ reloadMessages = function (token) {
 
 	// if there is an error, show it to the user
 	if (!res.success) {
-		console.error(res.message);
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
 		return;
 	}
 
 	// now get all the data
 	const data = res.data;
-	console.log(data);
 
 	// and add it to the message history
 	const history = document.getElementById('history');
@@ -263,12 +266,10 @@ postMessage = function (token, email) {
 	if (!content || content.trim() === '') {
 		return;
 	}
-	// console.log(token, content, email);
 	// then we post the message
 	const res = serverstub.postMessage(token, content, email);
 	if (!res.success) {
 		// on error, we display an error message
-		console.error(res.message);
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
 		return;
 	}
@@ -317,7 +318,6 @@ changeTab = function (tab, resetProfile) {
 	UPDATE DATA
 *****/
 updateProfileInformation = function (token, email) {
-	// console.log(token, email);
 	// this is the profile on the home page
 	let response;
 	// first we get the active user
@@ -333,7 +333,6 @@ updateProfileInformation = function (token, email) {
 
 	if (!response.success || !data) {
 		// if there was an error retrieving the messages, we display it to the user
-		console.error(response.message);
 		toastMessage(response.message, TOAST_MESSAGE.ERROR);
 		return;
 	}
@@ -385,7 +384,6 @@ searchUser = function (token) {
 	const response = serverstub.getUserDataByEmail(token, search);
 	if (!response.success) {
 		// if not, we show an error
-		console.error(response.message);
 		document.getElementById('search_results').innerText = response.message;
 		toastMessage(response.message, TOAST_MESSAGE.ERROR);
 		return;
@@ -394,7 +392,6 @@ searchUser = function (token) {
 	const data = response.data;
 	if (!data) {
 		// no data means the search somehow still failed, so we still display an error
-		console.error('No data returned!');
 		document.getElementById('search_result').innerText =
 			'Search failed, please try again!';
 		toastMessage('No data returned!', TOAST_MESSAGE.ERROR);
@@ -406,7 +403,6 @@ searchUser = function (token) {
 	container.className = 'user';
 	container.innerHTML = `${data.firstname} ${data.familyname}, ${data.email}`;
 	container.addEventListener('click', () => {
-		// console.log('click', data);
 		updateProfileInformation(getToken(), data.email);
 		changeTab('home', false);
 	});
@@ -421,8 +417,9 @@ const TOAST_MESSAGE = {SUCCESS: 'success', ERROR: 'error', INFO: 'info'};
 let timeoutId;
 
 toastMessage = function (message, type) {
+	// we either log or error the toast as well
+	(console[type] || console.log)(message);
 	// super simple toast messager
-	// console.log(typeof type);
 	if (typeof type === 'string') {
 		toast.classList.add(type.toLowerCase());
 	} else {

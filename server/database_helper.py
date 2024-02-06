@@ -1,6 +1,5 @@
 import sqlite3
 from flask import g
-import bcrypt
 import datetime
 
 DATABASE = 'database.db'
@@ -24,7 +23,7 @@ def init_db(app):
         db.commit()
 
 def query_db(query, args=(), one=False, commit=False):
-    print(query, args)
+    # print(query, args)
     cur = get_db().cursor()
     cur.execute(query, args)
     rv = cur.fetchall()
@@ -37,17 +36,8 @@ def query_db(query, args=(), one=False, commit=False):
 ###########
 #   USER
 ###########
-
-def save_user(user):
-    if user_exists(user['email']):
-        return (False, 'User with this email already exists')
-    
-    user = (user['email'], user['password'], user['firstname'], user['familyname'], user['gender'], user['city'], user['country'])
-    sql = "INSERT INTO user VALUES(?, ?, ?, ?, ?, ?, ?)"
-    cur = get_db().cursor()
-    cur.execute(sql, user)
-    get_db().commit()
-    return (True, 'User created successfully')
+def insert_user(user: tuple[str, str, str, str, str, str, str]):
+    return query_db("INSERT INTO user VALUES(?, ?, ?, ?, ?, ?, ?)", args=user, commit=True)
 
 def get_user_by_username(username):
     return query_db("SELECT username FROM user WHERE username LIKE '%s'" % (username), one=True)
@@ -103,8 +93,8 @@ def delete_session_by_token(token):
 #   POSTS
 ###########
 
-def get_messages_by_user(user):
+def get_messages_writer_and_text_by_user(user):
     return query_db("SELECT writer, posttext FROM post WHERE user LIKE '%s' ORDER BY id ASC" % (user))
 
-def post_message(writer, message, user):
+def insert_message(writer, message, user):
     return query_db("INSERT INTO post(writer, posttext, user) VALUES(?, ?, ?)", args=(writer, message, user), commit=True)
