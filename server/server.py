@@ -227,7 +227,8 @@ def change_user_password(data: {"token": str, "oldpassword": str, "newpassword":
     return (success, message)
 
 
-def login_user(username: str, password: str | bytes):
+# def login_user(username: str, password: str | bytes):
+def login_user(username: str, password: str or bytes):
     """
     Tries to login the user with the given username and password.
     Returns `(success: boolean, success_message: string)`
@@ -243,7 +244,7 @@ def login_user(username: str, password: str | bytes):
         message = 'Invalid username'
     return (success, message)
 
-def encrypt_password(password: str | bytes) -> bytes:
+def encrypt_password(password: str or bytes) -> bytes:
     """
     Encrypts the password and returns it.
     """
@@ -251,7 +252,7 @@ def encrypt_password(password: str | bytes) -> bytes:
         password = password.encode('utf-8')
     return bcrypt.hashpw(password, bcrypt.gensalt())
 
-def check_password(password: str | bytes, encrypted_password: str | bytes) -> tuple[bool, str]:
+def check_password(password: str or bytes, encrypted_password: str or bytes) -> tuple[bool, str]:
     """
     Checks if `password` (unencrypted) matches with `encrypted_password` (encrypted).
     Returns `(success: bool, success_message: string)`
@@ -264,7 +265,7 @@ def check_password(password: str | bytes, encrypted_password: str | bytes) -> tu
     success = bcrypt.checkpw(password, encrypted_password)
     return (success, 'User signed in successfully' if success else 'Password invalid')
 
-def check_token_validity(token: str) -> tuple[bool, str, str | None, str | None]:
+def check_token_validity(token: str) -> tuple[bool, str, str or None, str or None]:
     """
     Checks if the given token is valid and returns the corresponding user and password if it is.
     Returns the following tuple:
@@ -276,7 +277,7 @@ def check_token_validity(token: str) -> tuple[bool, str, str | None, str | None]
     user, password = up
     return (True, 'Token is valid', user, password)
 
-def get_user_messages(token: str, _user: str | None=None) -> tuple[bool, str, list]:
+def get_user_messages(token: str, _user: str or None=None) -> tuple[bool, str, list]:
     """
     Retrieves all the user messages of the given user with the given token.
     If user is None (default), the messages of the user with the given token will be retrieved instead.
