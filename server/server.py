@@ -143,14 +143,54 @@ def get_user_messages_by_email():
     response['data'] = messages
     return jsonify(response)
 
+@app.get('/get_user_data_by_token')
+def get_user_data_by_token():
+    data = request.get_json()
+
+    success, message = check_keys(['token'], data)
+    user_data = []
+    if success:
+        success, message, user_data = get_user_data(data['token'])
+    
+    response = {}
+    response['success'] = success
+    response['message'] = message
+    response['data'] = user_data
+    return jsonify(response)
+
+@app.get('/get_user_data_by_email/')
+def get_user_data_by_email():
+    data = request.get_json()
+
+    success, message = check_keys(['token', 'email'], data)
+    user_data = []
+    if success:
+        success, message, user_data = get_user_data(data['token'], data['email'])
+    
+    response = {}
+    response['success'] = success
+    response['message'] = message
+    response['data'] = user_data
+    return jsonify(response)
+
 @app.post('/post_message/')
 def post_message():
     data = request.get_json()
-    database_helper.insert_message(data['writer'], data['message'], data['user'])
-    
+
+    success, message = check_keys(['token', 'email'], data)
+
+    if success:
+        success, message, author, _ = check_token_validity(data['token'])
+    if success:
+        if data['message'] != "":
+            database_helper.insert_message(author, data['message'], data['email'])
+        else:
+            success = False
+            message = 'Message cannot be empty'
+
     response = {}
-    response['success'] = True
-    response['message'] = 'Message saved'
+    response['success'] = success
+    response['message'] = message
     return jsonify(response)
 
 ###########################
@@ -297,6 +337,26 @@ def get_user_messages(token: str, _user: str or None=None) -> tuple[bool, str, l
         messages.append({'writer': m[0], 'message': m[1]})
 
     return (success, message, messages)
+
+def get_user_data(token: str, _user: str or None=None) -> tuple[bool, str, list]:
+    """
+    Retrieves all the user data of the given user with the given token.
+    If user is None (default), the data of the user with the given token will be retrieved instead.
+    Returns: `(success: bool, success_message: string, user_data: list({ writer:string, message: string }))`
+    """
+    user_data = []
+    success, message, user, _ = check_token_validity(token)
+    if not success:
+        return (success, message, user_data)
+    
+    if _user and not database_helper.user_exists(_user):
+        return (False, 'No user with this email exists', user_data)
+    
+    raw_data = database_helper.get_all_user_info(_user if _user else user)
+
+    message = 'Successfully retreived data for user ' + user
+    user_data = raw_data[:1] + raw_data[2:]
+    return (success, message, user_data)
 
 def save_user(user) -> tuple[bool, str]:
     if database_helper.user_exists(user['email']):
