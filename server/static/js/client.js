@@ -121,25 +121,22 @@ signup = function () {
 	}
 };
 
-login = function (email, password) {
-	const callback = (res) => {
-		console.log(res);
-		if (res.success) {
-			// in case of success, we reset our tab to home, set the token and refresh the page
-			sessionStorage.setItem('activeTab', 'home');
-			localStorage.setItem('token', res.data);
-			refresh();
-
-			// also print out success message at the end
-			toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
-		} else {
-			// print error message if the login was not successful
-			toastMessage(res.message, TOAST_MESSAGE.ERROR);
-		}
-	};
-
+login = async function (email, password) {
 	// try to sign in the user
-	server.signIn(email, password, callback);
+	const res = await server.signIn(email, password);
+
+	if (res.success) {
+		// in case of success, we reset our tab to home, set the token and refresh the page
+		sessionStorage.setItem('activeTab', 'home');
+		localStorage.setItem('token', res.data);
+		refresh();
+
+		// also print out success message at the end
+		toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
+	} else {
+		// print error message if the login was not successful
+		toastMessage(res.message, TOAST_MESSAGE.ERROR);
+	}
 };
 
 logout = function () {
