@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link href="/css/client.css" rel="stylesheet" />
+		<script src="/js/server.js"></script>
+		<script src="/js/client.js"></script>
+
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap"
+			rel="stylesheet"
+		/>
+		<script
+			src="https://kit.fontawesome.com/531793c136.js"
+			crossorigin="anonymous"
+		></script>
+		<title>Twidder</title>
+	</head>
+	<body>
+		<div class="container">
+			<div class="logo">
+				<img src="/images/wimage.png" />
+			</div>
+			<div class="login-container">
+				<form id="login" name="login">
+					<label for="login-email">Email</label>
+					<input id="login-email" name="email" type="email" required />
+
+					<label for="login-password">Password</label>
+					<input id="login-password" name="password" type="password" required />
+
+					<button class="btn-login" type="submit">login</button>
+				</form>
+				<form id="signup" name="signup">
+					<h3>Sign up here</h3>
+					<label for="signup-firstname">First name</label>
+					<input id="signup-firstname" name="firstname" type="text" required />
+
+					<label for="signup-lastname">Last name</label>
+					<input id="signup-lastname" name="lastname" type="text" required />
+
+					<label for="signup-gender">Gender</label>
+					<select name="gender" id="signup-gender">
+						<option value="male">Male</option>
+						<option value="female">Female</option>
+						<option value="other">Other</option>
+					</select>
+
+					<label for="signup-city">City</label>
+					<input id="signup-city" name="city" type="text" required />
+
+					<label for="signup-country">Country</label>
+					<input id="signup-country" name="country" type="text" required />
+
+					<label for="signup-email">Email</label>
+					<input id="signup-email" name="email" type="email" required />
+
+					<label for="signup-password">Password</label>
+					<input
+						id="signup-password"
+						name="password"
+						type="password"
+						type="password"
+						oninput="this.setCustomValidity('')"
+						required
+					/>
+
+					<label for="signup-password-repeat">Repeat psw</label>
+					<input
+						id="signup-password-repeat"
+						name="password_repeat"
+						type="password"
+						oninput="this.setCustomValidity('')"
+						required
+					/>
+
+					<button class="btn-signup" type="submit">SignUp</button>
+				</form>
+			</div>
+		</div>
+		<div id="toast"></div>
+	</body>
+</html>

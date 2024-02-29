@@ -1,5 +1,5 @@
-from flask import Flask, request, jsonify
-import json, re, bcrypt
+from flask import Flask, request, jsonify, render_template
+import re, bcrypt
 
 from uuid import uuid4
 
@@ -7,7 +7,7 @@ import database_helper
 
 SIGNUP_KEYS = ['email', 'password', 'firstname', 'familyname', 'gender', 'city', 'country']
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='static', template_folder='templates')
 
 # initialize the app
 database_helper.init_db(app)
@@ -16,13 +16,13 @@ database_helper.init_db(app)
 def close_connection(exception):
     database_helper.close_connection(exception)
 
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
+@app.route('/')
+def send_client():
+    return render_template('client.html')
 
 @app.get('/sign_in/')
 def signin():
-    data = request.get_json()
+    data = request.args
 
     success, message = check_keys(['username', 'password'], data)
     
