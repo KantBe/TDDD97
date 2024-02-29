@@ -43,7 +43,7 @@ const sendRequest = (type, url, data, callback) => {
 };
 
 const server = {
-	signUp: (data) => {
+	signUp: (data, callback) => {
 		console.log('sign up', data);
 	},
 
