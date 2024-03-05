@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS, cross_origin
 import re, bcrypt
 
 from uuid import uuid4
@@ -8,6 +9,8 @@ import database_helper
 SIGNUP_KEYS = ['email', 'password', 'firstname', 'familyname', 'gender', 'city', 'country']
 
 app = Flask(__name__, static_url_path='', static_folder='static', template_folder='templates')
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 # initialize the app
 database_helper.init_db(app)
@@ -21,6 +24,7 @@ def send_client():
     return render_template('client.html')
 
 @app.get('/sign_in/')
+@cross_origin()
 def signin():
     data = request.args
 
@@ -43,6 +47,7 @@ def signin():
     return jsonify(response)
 
 @app.get('/user_info/<username>')
+@cross_origin()
 def get_all_user_info(username):
     response = {}
     response['info'] = database_helper.get_all_user_info(username)
@@ -50,6 +55,7 @@ def get_all_user_info(username):
     return jsonify(response)
 
 @app.post('/sign_up/')
+@cross_origin()
 def signup():
     data = request.get_json()
     success, message = check_keys(SIGNUP_KEYS, data)
@@ -74,6 +80,7 @@ def signup():
     return jsonify(response)
 
 @app.get('/sign_out/')
+@cross_origin()
 def signout():
     data = request.get_json()
     
@@ -100,6 +107,7 @@ def signout():
     return jsonify(response)
 
 @app.put('/change_password/')
+@cross_origin()
 def change_password():
     data = request.get_json()
 
@@ -114,6 +122,7 @@ def change_password():
     return jsonify(response)
 
 @app.get('/get_user_messages_by_token/')
+@cross_origin()
 def get_user_messages_by_token():
     data = request.get_json()
 
@@ -129,6 +138,7 @@ def get_user_messages_by_token():
     return jsonify(response)
 
 @app.get('/get_user_messages_by_email/')
+@cross_origin()
 def get_user_messages_by_email():
     data = request.get_json()
 
@@ -144,6 +154,7 @@ def get_user_messages_by_email():
     return jsonify(response)
 
 @app.get('/get_user_data_by_token')
+@cross_origin()
 def get_user_data_by_token():
     data = request.get_json()
 
@@ -159,6 +170,7 @@ def get_user_data_by_token():
     return jsonify(response)
 
 @app.get('/get_user_data_by_email/')
+@cross_origin()
 def get_user_data_by_email():
     data = request.get_json()
 
@@ -174,6 +186,7 @@ def get_user_data_by_email():
     return jsonify(response)
 
 @app.post('/post_message/')
+@cross_origin()
 def post_message():
     data = request.get_json()
 
