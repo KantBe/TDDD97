@@ -39,7 +39,7 @@ const server = {
 	},
 
 	signIn: async (email, password) => {
-		return sendRequest('GET', 'http://localhost:5000/sign_in/', {
+		return sendRequest('GET', 'http://127.0.0.1:5000/sign_in/', {
 			username: email,
 			password: password,
 		});
