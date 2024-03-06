@@ -313,14 +313,14 @@ changeTab = function (tab, resetProfile) {
 /*****
 	UPDATE DATA
 *****/
-updateProfileInformation = function (token, email) {
+updateProfileInformation = async function (token, email) {
 	// this is the profile on the home page
 	let response;
 	// first we get the active user
-	const activeUser = server.getUserDataByToken(token);
+	const activeUser = await server.getUserDataByToken(token);
 	if (email) {
 		// if email is set, we want to load a different user
-		response = server.getUserDataByEmail(token, email);
+		response = await server.getUserDataByEmail(token, email);
 	} else {
 		response = activeUser;
 	}

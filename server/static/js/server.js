@@ -21,7 +21,7 @@ const sendRequest = async (type, url, data) => {
 	if (data == null) {
 		request.send(data);
 	} else {
-	request.send(JSON.stringify(data));
+		request.send(JSON.stringify(data));
 	}
 
 	return new Promise((resolve, reject) => {
@@ -69,11 +69,18 @@ const server = {
 		console.log('post message', token, content, email);
 	},
 
-	getUserDataByToken: (token) => {
+	getUserDataByToken: async (token) => {
 		console.log('get user data by token', token);
+		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_token/', {
+			token: token,
+		});
 	},
 
-	getUserDataByEmail: (token, email) => {
+	getUserDataByEmail: async (token, email) => {
 		console.log('get user data by email', token, email);
+		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_email/', {
+			token: token,
+			email: email,
+		});
 	},
 };
