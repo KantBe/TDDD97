@@ -57,8 +57,13 @@ const server = {
 		});
 	},
 
-	changePassword: (token, oldPassword, newPassword) => {
+	changePassword: async (token, oldPassword, newPassword) => {
 		console.log('change password', token, oldPassword, newPassword);
+		return sendRequest('PUT', 'http://127.0.0.1:5000/change_password/', {
+			token: token,
+			oldpassword: oldPassword,
+			newpassword: newPassword,
+		});	
 	},
 
 	getUserMessagesByEmail: (token, email) => {

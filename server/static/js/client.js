@@ -157,7 +157,7 @@ logout = async function () {
 	toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
 };
 
-changePassword = function () {
+changePassword = async function () {
 	// check the password requirements first
 	const form = document.password_reset;
 	if (!checkPassword(form)) {
@@ -165,7 +165,7 @@ changePassword = function () {
 	}
 
 	// then change the password
-	const response = server.changePassword(
+	const response = await server.changePassword(
 		getToken(),
 		form.password_old.value,
 		form.password.value
