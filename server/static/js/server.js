@@ -18,7 +18,11 @@ const sendRequest = async (type, url, data) => {
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.setRequestHeader('Accept', 'application/json');
 
-	request.send(data);
+	if (data == null) {
+		request.send(data);
+	} else {
+	request.send(JSON.stringify(data));
+	}
 
 	return new Promise((resolve, reject) => {
 		request.onreadystatechange = () => {
@@ -34,8 +38,9 @@ const sendRequest = async (type, url, data) => {
 };
 
 const server = {
-	signUp: (data) => {
+	signUp: async (data) => {
 		console.log('sign up', data);
+		return sendRequest('POST', 'http://127.0.0.1:5000/sign_up/', data)
 	},
 
 	signIn: async (email, password) => {

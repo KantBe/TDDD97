@@ -91,7 +91,7 @@ window.onload = function () {
 	refresh();
 };
 
-signup = function () {
+signup = async function () {
 	const form = document.signup;
 	// first, we check if the password meets the criteria
 	if (!checkPassword(form)) {
@@ -110,7 +110,7 @@ signup = function () {
 	};
 
 	// and sign up the user
-	const res = server.signUp(data);
+	const res = await server.signUp(data);
 	if (res.success) {
 		// on success, we print a success message and sign in the user
 		toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
