@@ -75,7 +75,7 @@ def signup():
 
 @app.get('/sign_out/')
 def signout():
-    data = request.get_json()
+    data = request.args
     
     success, message = check_keys(['token'], data)
     

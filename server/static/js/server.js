@@ -45,8 +45,11 @@ const server = {
 		});
 	},
 
-	signOut: (token) => {
+	signOut: async (token) => {
 		console.log('sign out', token);
+		return sendRequest('GET', 'http://127.0.0.1:5000/sign_out/', {
+			token: token,
+		});
 	},
 
 	changePassword: (token, oldPassword, newPassword) => {

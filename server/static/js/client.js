@@ -139,11 +139,11 @@ login = async function (email, password) {
 	}
 };
 
-logout = function () {
+logout = async function () {
 	// user wants to log out
 	// so we get the token  and log out the user from the item
 	const token = getToken();
-	const res = server.signOut(token);
+	const res = await server.signOut(token);
 	if (res.success) {
 		// this should always succeed if the user didn't mess around with the local storage
 		localStorage.removeItem('token');
