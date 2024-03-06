@@ -197,7 +197,7 @@ checkPassword = function (form) {
 	return true;
 };
 
-reloadMessages = function (token) {
+reloadMessages = async function (token) {
 	// reload all the messages from the user with the given token and email
 	if (!token) {
 		token = getToken();
@@ -208,7 +208,7 @@ reloadMessages = function (token) {
 	clearHistory();
 
 	// get all messages by user and mail
-	const res = server.getUserMessagesByEmail(token, email);
+	const res = await server.getUserMessagesByEmail(token, email);
 
 	// if there is an error, show it to the user
 	if (!res.success) {

@@ -66,8 +66,12 @@ const server = {
 		});	
 	},
 
-	getUserMessagesByEmail: (token, email) => {
+	getUserMessagesByEmail: async (token, email) => {
 		console.log('get user messages by email', token, email);
+			return sendRequest('GET', 'http://127.0.0.1:5000/get_user_messages_by_email/', {
+			token: token,
+			email: email,
+		});
 	},
 
 	postMessage: (token, content, email) => {

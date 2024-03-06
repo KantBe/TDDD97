@@ -115,7 +115,7 @@ def change_password():
 
 @app.get('/get_user_messages_by_token/')
 def get_user_messages_by_token():
-    data = request.get_json()
+    data = request.args
 
     success, message = check_keys(['token'], data)
     messages = []
@@ -130,7 +130,7 @@ def get_user_messages_by_token():
 
 @app.get('/get_user_messages_by_email/')
 def get_user_messages_by_email():
-    data = request.get_json()
+    data = request.args
 
     success, message = check_keys(['token', 'email'], data)
     messages = []
