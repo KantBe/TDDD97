@@ -145,7 +145,7 @@ def get_user_messages_by_email():
 
 @app.get('/get_user_data_by_token')
 def get_user_data_by_token():
-    data = request.args
+    data = request.get_json()
 
     success, message = check_keys(['token'], data)
     user_data = []
@@ -160,7 +160,7 @@ def get_user_data_by_token():
 
 @app.get('/get_user_data_by_email/')
 def get_user_data_by_email():
-    data = request.args
+    data = request.get_json()
 
     success, message = check_keys(['token', 'email'], data)
     user_data = []
