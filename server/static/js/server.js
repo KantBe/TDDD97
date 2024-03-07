@@ -39,7 +39,6 @@ const sendRequest = async (type, url, data) => {
 
 const server = {
 	signUp: async (data) => {
-		console.log('sign up', data);
 		return sendRequest('POST', 'http://127.0.0.1:5000/sign_up/', data)
 	},
 
@@ -51,14 +50,12 @@ const server = {
 	},
 
 	signOut: async (token) => {
-		console.log('sign out', token);
 		return sendRequest('GET', 'http://127.0.0.1:5000/sign_out/', {
 			token: token,
 		});
 	},
 
 	changePassword: async (token, oldPassword, newPassword) => {
-		console.log('change password', token, oldPassword, newPassword);
 		return sendRequest('PUT', 'http://127.0.0.1:5000/change_password/', {
 			token: token,
 			oldpassword: oldPassword,
@@ -67,7 +64,6 @@ const server = {
 	},
 
 	getUserMessagesByEmail: async (token, email) => {
-		console.log('get user messages by email', token, email);
 			return sendRequest('GET', 'http://127.0.0.1:5000/get_user_messages_by_email/', {
 			token: token,
 			email: email,
@@ -75,7 +71,6 @@ const server = {
 	},
 
 	postMessage: async (token, content, email) => {
-		console.log('post message', token, content, email);
 		return sendRequest('POST', 'http://127.0.0.1:5000/post_message/', {
 			token: token,
 			message: content,
@@ -84,14 +79,12 @@ const server = {
 	},
 
 	getUserDataByToken: async (token) => {
-		console.log('get user data by token', token);
 		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_token/', {
 			token: token,
 		});
 	},
 
 	getUserDataByEmail: async (token, email) => {
-		console.log('get user data by email', token, email);
 		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_email/', {
 			token: token,
 			email: email,
