@@ -232,7 +232,7 @@ reloadMessages = async function (token) {
 
 		const messageContent = document.createElement('div');
 		messageContent.className = 'message_content';
-		messageContent.innerText = message.content;
+		messageContent.innerText = message.message;
 		messageContainer.appendChild(messageContent);
 
 		history.appendChild(messageContainer);
@@ -247,7 +247,7 @@ invalid = function (element, message) {
 	element.reportValidity();
 };
 
-postMessage = function (token, email) {
+postMessage = async function (token, email) {
 	// we check if token and mail are given
 	if (!token) {
 		token = getToken();
@@ -263,7 +263,7 @@ postMessage = function (token, email) {
 		return;
 	}
 	// then we post the message
-	const res = server.postMessage(token, content, email);
+	const res = await server.postMessage(token, content, email);
 	if (!res.success) {
 		// on error, we display an error message
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
@@ -338,7 +338,7 @@ updateProfileInformation = async function (token, email) {
 		'#home > .personal_information > .return'
 	);
 	// based on the matching email
-	if (data.email !== activeUser.data.email) {
+	if (data[0] !== activeUser.data[0]) {
 		retButton.classList.remove('hidden');
 	} else {
 		retButton.classList.add('hidden');
@@ -347,12 +347,12 @@ updateProfileInformation = async function (token, email) {
 	// then we set all the profile information
 	document.getElementById(
 		'fullname'
-	).innerText = `${data.firstname} ${data.familyname}`;
-	document.getElementById('gender').innerText = data.gender;
-	document.getElementById('email').innerText = data.email;
+	).innerText = `${data[1]} ${data[2]}`;
+	document.getElementById('gender').innerText = data[3];
+	document.getElementById('email').innerText = data[0];
 	document.getElementById(
 		'location'
-	).innerText = `${data.city}, ${data.country}`;
+	).innerText = `${data[4]}, ${data[5]}`;
 
 	// and update the messages
 	reloadMessages(token);
@@ -397,9 +397,9 @@ searchUser = function (token) {
 	// we update the search field to show the new user
 	const container = document.createElement('div');
 	container.className = 'user';
-	container.innerHTML = `${data.firstname} ${data.familyname}, ${data.email}`;
+	container.innerHTML = `${data[1]} ${data[2]}, ${data[0]}`;
 	container.addEventListener('click', () => {
-		updateProfileInformation(getToken(), data.email);
+		updateProfileInformation(getToken(), data[0]);
 		changeTab('home', false);
 	});
 	document.getElementById('search_results').innerHTML = '';
