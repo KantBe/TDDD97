@@ -371,13 +371,13 @@ clearHistory = function () {
 /****
 	SEARCH USER
 ****/
-searchUser = function (token) {
+searchUser = async function (token) {
 	// in case we want to search for a user
 	// we first get the searched value
 	const search = document.search.searchbar.value;
 
 	// then we search if a user with that email exists
-	const response = server.getUserDataByEmail(token, search);
+	const response = await server.getUserDataByEmail(token, search);
 	if (!response.success) {
 		// if not, we show an error
 		document.getElementById('search_results').innerText = response.message;
