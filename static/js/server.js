@@ -1,7 +1,14 @@
-const PORT = 443;
-const URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
+const env = 'PROD'; // "DEV"
 
-const API = `https://${URL}`;
+let PORT, URL;
+if (env === 'PROD') {
+	PORT = 443;
+	URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
+} else {
+	PORT = 5000;
+	URL = 'localhost';
+}
+const API = `${URL === 'localhost' ? 'https' : 'http'}://${URL}:${PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 
 let socket;
@@ -109,7 +116,9 @@ const server = {
 			console.log('socket already exists');
 			return;
 		}
-		socket = new WebSocket(`ws://${URL}/websocket?token=${token}`);
+		socket = new WebSocket(
+			`${URL === 'localhost' ? 'ws' : 'wss'}://${URL}/websocket?token=${token}`
+		);
 		socket.addEventListener('open', () => {
 			socket.send(token);
 		});
