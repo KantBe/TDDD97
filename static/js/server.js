@@ -1,7 +1,7 @@
 const PORT = 443;
 const URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
 
-const API = `https://${URL}:${PORT}`;
+const API = `https://${URL}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 
 let socket;
@@ -109,7 +109,7 @@ const server = {
 			console.log('socket already exists');
 			return;
 		}
-		socket = new WebSocket(`ws://${URL}:${PORT}/websocket?token=${token}`);
+		socket = new WebSocket(`ws://${URL}/websocket?token=${token}`);
 		socket.addEventListener('open', () => {
 			socket.send(token);
 		});
