@@ -1,6 +1,6 @@
 const PORT = 5000;
 const URL = 'https://tddd97-b11-f93163caa8f5.herokuapp.com/';
-const API = `http://${URL}:${PORT}`;
+const API = `${URL}:${PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 
 let socket;
