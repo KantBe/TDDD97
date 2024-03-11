@@ -123,6 +123,14 @@ const server = {
 			socket.send(token);
 		});
 
+		let interval = setInterval(() => {
+			if (!socket) {
+				clearInterval(interval);
+				return;
+			}
+			socket.send('ping');
+		}, 5000);
+
 		socket.addEventListener('message', (event) => {
 			const data = event.data;
 			console.log('recieved data', data);
@@ -132,6 +140,7 @@ const server = {
 
 		socket.addEventListener('close', (event) => {
 			console.log('closing socket', event);
+			clearInterval(interval);
 
 			localStorage.removeItem('token');
 			refresh();
