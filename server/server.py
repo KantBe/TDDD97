@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS, cross_origin
+from flask_sock import Sock, ConnectionClosed
 import re, bcrypt
 
 from uuid import uuid4
@@ -10,10 +11,32 @@ SIGNUP_KEYS = ['email', 'password', 'firstname', 'familyname', 'gender', 'city',
 
 app = Flask(__name__, static_url_path='', static_folder='static', template_folder='templates')
 cors = CORS(app)
+sock = Sock(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
+app.config['SOCK_SERVER_OPTIONS'] = {'ping_interval': 25}
+
+sockets = {}
 
 # initialize the app
 database_helper.init_db(app)
+
+@sock.route('/websocket')
+def websocket(ws):
+    data = request.args
+    success, message = check_keys(['token'], data)
+
+    if not success:
+        return
+    
+    token = data['token']
+    # then we send an acknowledgement
+    ws.send('received: ' + str(token))
+    # print(token)
+    sockets[token] = ws
+    
+    while True:
+        # we receive endlessly to keep the socket alive
+        ws.receive()
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -37,6 +60,7 @@ def signin():
         # do something if all keys are there
         success, message = login_user(username, password)
         if success:
+            close_all_sockets_from_user_except(username)
             auth_token = generate_token()
             database_helper.store_token(auth_token, username)
 
@@ -101,6 +125,26 @@ def signout():
             message = 'Successfully logged out user'
         pass
     
+    response = {}
+    response['success'] = success
+    response['message'] = message
+    return jsonify(response)
+
+@app.get('/check_token')
+@cross_origin()
+def check_token():
+    data = request.args
+
+    success, message = check_keys(['token'], data)
+
+    if success:
+        token = data['token']
+        session = database_helper.get_session_by_token(token)
+        print(session)
+        if not session:
+            success = False
+            message = 'Token does not exist'
+
     response = {}
     response['success'] = success
     response['message'] = message
@@ -378,3 +422,16 @@ def save_user(user) -> tuple[bool, str]:
     user = (user['email'], user['password'], user['firstname'], user['familyname'], user['gender'], user['city'], user['country'])
     database_helper.insert_user(user)
     return (True, 'User created successfully')
+
+def close_all_sockets_from_user_except(user, _token=None):
+    # get old sessions
+    sessions = database_helper.get_sessions_by_user(user)
+    for session in sessions:
+        token = session[0]
+        if token in sockets and token != _token:
+            try:
+                sockets[token].send('logout')
+                sockets[token].close(reason=1000)
+            except ConnectionClosed:
+                pass
+            del sockets[token]

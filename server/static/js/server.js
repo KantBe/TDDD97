@@ -1,4 +1,7 @@
+const API = 'http://localhost:5000/';
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
+
+let socket;
 
 const sendRequest = async (type, url, data) => {
 	if (type === 'GET' && data) {
@@ -17,6 +20,7 @@ const sendRequest = async (type, url, data) => {
 
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.setRequestHeader('Accept', 'application/json');
+	request.setRequestHeader('Access-Control-Allow-Origin', '*');
 
 	request.send(data);
 
@@ -67,5 +71,42 @@ const server = {
 
 	getUserDataByEmail: (token, email) => {
 		console.log('get user data by email', token, email);
+	},
+
+	checkToken: async (token) => {
+		return sendRequest('GET', `${API}/check_token`, {
+			token: token,
+		});
+	},
+
+	websocket: (token) => {
+		if (socket) {
+			console.log('socket already exists');
+			return;
+		}
+		socket = new WebSocket(`ws://localhost:5000/websocket?token=${token}`);
+		socket.addEventListener('open', () => {
+			socket.send(token);
+		});
+
+		socket.addEventListener('message', (event) => {
+			const data = event.data;
+			if (data === 'logout') {
+				localStorage.removeItem('token');
+				refresh();
+
+				// and send an information message to the user
+				toast.classList.remove('logged-in');
+				toastMessage(
+					'You were logged out due to another login to your account',
+					TOAST_MESSAGE.INFO
+				);
+			}
+		});
+
+		socket.addEventListener('close', (event) => {
+			console.log('closing socket', event);
+			socket = undefined;
+		});
 	},
 };

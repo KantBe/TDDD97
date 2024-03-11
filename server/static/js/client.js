@@ -12,16 +12,19 @@ displayView = function (id) {
 	document.getElementById('content').innerHTML = view.innerHTML;
 };
 
-refresh = function () {
+refresh = async function () {
 	console.log('refreshing');
 	// first we reset our content div
 	document.getElementById('content').innerHTML = '';
 
 	// then we get our current saved token and user
 	const token = getToken();
+	const res = await server.checkToken(token);
 
-	if (token) {
+	if (token && res.success) {
 		// user is logged in
+		console.log('starting websocket');
+		server.websocket(token);
 		loadProfile(token);
 	} else {
 		// user is not logged in
@@ -139,11 +142,12 @@ login = async function (email, password) {
 	}
 };
 
-logout = function () {
+logout = async function () {
 	// user wants to log out
 	// so we get the token  and log out the user from the item
 	const token = getToken();
-	const res = server.signOut(token);
+	const res = await server.signOut(token);
+	console.log(res);
 	if (res.success) {
 		// this should always succeed if the user didn't mess around with the local storage
 		localStorage.removeItem('token');

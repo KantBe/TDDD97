@@ -81,7 +81,9 @@ def get_session_by_token(token):
     return query_db("SELECT * FROM user_session WHERE token LIKE '%s'" % token, one=True)#
 
 def delete_session_by_user(username):
-    sql = "DELETE FROM user_session WHERE user LIKE '%s' AND expires <= datetime('now')" % (username)
+    # sql = "DELETE FROM user_session WHERE user LIKE '%s' AND expires <= datetime('now')" % (username)
+    # we remove all sessions
+    sql = "DELETE FROM user_session WHERE user LIKE '%s'" % (username)
     ret = query_db(sql, commit=True)
     print(ret)
 
