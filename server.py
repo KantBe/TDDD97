@@ -36,7 +36,9 @@ def websocket(ws):
     
     while True:
         # we receive endlessly to keep the socket alive
-        ws.receive()
+        msg = ws.receive()
+        if msg:
+            ws.send('pong')
 
 @app.teardown_appcontext
 def close_connection(exception):
