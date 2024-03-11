@@ -125,6 +125,7 @@ const server = {
 
 		socket.addEventListener('message', (event) => {
 			const data = event.data;
+			console.log('recieved data', data);
 			if (data === 'logout') {
 				localStorage.removeItem('token');
 				refresh();
