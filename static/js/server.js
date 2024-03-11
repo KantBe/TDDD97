@@ -127,20 +127,22 @@ const server = {
 			const data = event.data;
 			console.log('recieved data', data);
 			if (data === 'logout') {
-				localStorage.removeItem('token');
-				refresh();
-
-				// and send an information message to the user
-				toast.classList.remove('logged-in');
-				toastMessage(
-					'You were logged out due to another login to your account',
-					TOAST_MESSAGE.INFO
-				);
 			}
 		});
 
 		socket.addEventListener('close', (event) => {
 			console.log('closing socket', event);
+
+			localStorage.removeItem('token');
+			refresh();
+
+			// and send an information message to the user
+			toast.classList.remove('logged-in');
+			toastMessage(
+				'You were logged out due to another login to your account',
+				TOAST_MESSAGE.INFO
+			);
+
 			socket = undefined;
 		});
 	},

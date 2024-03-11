@@ -120,6 +120,16 @@ def signout():
             success = False
             message = 'No session with the given token exists'
         else:
+            if token in sockets:
+                print('closing socket', token)
+                try:
+                    sockets[token].send('logout')
+                    sockets[token].close(reason=1000)
+                except ConnectionClosed:
+                    print('socket with token', token, 'already closed')
+                    pass
+                del sockets[token]
+            
             res = database_helper.delete_session_by_token(token)
             print(res)
             message = 'Successfully logged out user'
@@ -430,9 +440,11 @@ def close_all_sockets_from_user_except(user, _token=None):
     for session in sessions:
         token = session[0]
         if token in sockets and token != _token:
+            print('closing socket', token)
             try:
                 sockets[token].send('logout')
                 sockets[token].close(reason=1000)
             except ConnectionClosed:
+                print('socket with token', token, 'already closed')
                 pass
             del sockets[token]
