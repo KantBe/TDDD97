@@ -59,6 +59,7 @@ def signin():
         password = data['password']
         # do something if all keys are there
         success, message = login_user(username, password)
+        print(success, message)
         if success:
             close_all_sockets_from_user_except(username)
             auth_token = generate_token()
@@ -150,7 +151,6 @@ def check_token():
     if success:
         token = data['token']
         session = database_helper.get_session_by_token(token)
-        print(session)
         if not session:
             success = False
             message = 'Token does not exist'
@@ -302,7 +302,7 @@ def validate_password(password: str) -> tuple[bool, str]:
     Checks if the password is of valid length
     returns (False, 'Password is not long enough') if not, (True, '') if it is
     """
-    print(len(password), password)
+    # print(len(password), password)
     if len(password) < 8:
         return (False, 'Password is not long enough')
     return (True, '')
@@ -368,7 +368,7 @@ def check_password(password: str or bytes, encrypted_password: str or bytes) -> 
         password = password.encode('utf-8')
     if type(encrypted_password) is str:
         encrypted_password = encrypted_password.encode('utf-8')
-    print(password, encrypted_password)
+    # print(password, encrypted_password)
     success = bcrypt.checkpw(password, encrypted_password)
     return (success, 'User signed in successfully' if success else 'Password invalid')
 
