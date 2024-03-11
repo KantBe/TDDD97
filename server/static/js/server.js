@@ -1,4 +1,6 @@
-const API = 'http://localhost:5000/';
+const PORT = 5000;
+const URL = 'localhost';
+const API = `http://${URL}:${PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 
 let socket;
@@ -43,39 +45,39 @@ const sendRequest = async (type, url, data) => {
 
 const server = {
 	signUp: async (data) => {
-		return sendRequest('POST', 'http://127.0.0.1:5000/sign_up/', data)
+		return sendRequest('POST', `${API}/sign_up/`, data);
 	},
 
 	signIn: async (email, password) => {
-		return sendRequest('GET', 'http://127.0.0.1:5000/sign_in/', {
+		return sendRequest('GET', `${API}/sign_in/`, {
 			username: email,
 			password: password,
 		});
 	},
 
 	signOut: async (token) => {
-		return sendRequest('GET', 'http://127.0.0.1:5000/sign_out/', {
+		return sendRequest('GET', `${API}/sign_out/`, {
 			token: token,
 		});
 	},
 
 	changePassword: async (token, oldPassword, newPassword) => {
-		return sendRequest('PUT', 'http://127.0.0.1:5000/change_password/', {
+		return sendRequest('PUT', `${API}/change_password/`, {
 			token: token,
 			oldpassword: oldPassword,
 			newpassword: newPassword,
-		});	
+		});
 	},
 
 	getUserMessagesByEmail: async (token, email) => {
-			return sendRequest('GET', 'http://127.0.0.1:5000/get_user_messages_by_email/', {
+		return sendRequest('GET', `${API}/get_user_messages_by_email/`, {
 			token: token,
 			email: email,
 		});
 	},
 
 	postMessage: async (token, content, email) => {
-		return sendRequest('POST', 'http://127.0.0.1:5000/post_message/', {
+		return sendRequest('POST', `${API}/post_message/`, {
 			token: token,
 			message: content,
 			email: email,
@@ -83,13 +85,13 @@ const server = {
 	},
 
 	getUserDataByToken: async (token) => {
-		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_token/', {
+		return sendRequest('GET', `${API}/get_user_data_by_token/`, {
 			token: token,
 		});
 	},
 
 	getUserDataByEmail: async (token, email) => {
-		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_email/', {
+		return sendRequest('GET', `${API}/get_user_data_by_email/`, {
 			token: token,
 			email: email,
 		});
@@ -106,7 +108,7 @@ const server = {
 			console.log('socket already exists');
 			return;
 		}
-		socket = new WebSocket(`ws://localhost:5000/websocket?token=${token}`);
+		socket = new WebSocket(`ws://${URL}:${PORT}/websocket?token=${token}`);
 		socket.addEventListener('open', () => {
 			socket.send(token);
 		});
