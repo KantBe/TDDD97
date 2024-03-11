@@ -5,6 +5,8 @@ import re, bcrypt
 
 from uuid import uuid4
 
+from decorators import authorized
+
 import database_helper
 
 SIGNUP_KEYS = ['email', 'password', 'firstname', 'familyname', 'gender', 'city', 'country']
@@ -23,7 +25,7 @@ database_helper.init_db(app)
 @sock.route('/websocket')
 def websocket(ws):
     data = request.args
-    success, message = check_keys(['token'], data)
+    success, _ = check_keys(['token'], data)
 
     if not success:
         return
@@ -38,6 +40,7 @@ def websocket(ws):
         # we receive endlessly to keep the socket alive
         msg = ws.receive()
         if msg:
+            # also sends ping pong to keep alive
             ws.send('pong')
 
 @app.teardown_appcontext
@@ -61,17 +64,20 @@ def signin():
         password = data['password']
         # do something if all keys are there
         success, message = login_user(username, password)
-        print(success, message)
-        if success:
-            close_all_sockets_from_user_except(username)
-            auth_token = generate_token()
-            database_helper.store_token(auth_token, username)
+    
+    # success is only true if user is logged in
+    if success:
+        close_all_sockets_from_user_except(username)
+        auth_token = generate_token()
+        database_helper.store_token(auth_token, username)
 
     response = {}
     response['success'] = success
     response['message'] = message
     response['data'] = auth_token if auth_token else ''
-    return jsonify(response)
+    res = jsonify(response)
+    res.headers.set('Authorization', auth_token)
+    return res
 
 @app.get('/user_info/<username>')
 @cross_origin()
@@ -108,35 +114,30 @@ def signup():
 
 @app.get('/sign_out/')
 @cross_origin()
-def signout():
-    data = request.args
-    
-    success, message = check_keys(['token'], data)
-    
-    if success:
-        token = data['token']
-        # check if user with this token is logged in
-        # and log out user
-        session = database_helper.get_session_by_token(token)
-        print(session)
-        if not session:
-            success = False
-            message = 'No session with the given token exists'
-        else:
-            if token in sockets:
-                print('closing socket', token)
-                try:
-                    sockets[token].send('logout')
-                    sockets[token].close(reason=1000)
-                except ConnectionClosed:
-                    print('socket with token', token, 'already closed')
-                    pass
-                del sockets[token]
-            
-            res = database_helper.delete_session_by_token(token)
-            print(res)
-            message = 'Successfully logged out user'
-        pass
+@authorized
+def signout(token):
+    # check if user with this token is logged in
+    # and log out user
+    session = database_helper.get_session_by_token(token)
+    print(session)
+    if not session:
+        success = False
+        message = 'No session with the given token exists'
+    else:
+        if token in sockets:
+            print('closing socket', token)
+            try:
+                sockets[token].send('logout')
+                sockets[token].close(reason=1000)
+            except ConnectionClosed:
+                print('socket with token', token, 'already closed')
+                pass
+            del sockets[token]
+        
+        res = database_helper.delete_session_by_token(token)
+        print(res)
+        success = True
+        message = 'Successfully logged out user'
     
     response = {}
     response['success'] = success
@@ -145,17 +146,15 @@ def signout():
 
 @app.get('/check_token')
 @cross_origin()
-def check_token():
-    data = request.args
-
-    success, message = check_keys(['token'], data)
-
-    if success:
-        token = data['token']
-        session = database_helper.get_session_by_token(token)
-        if not session:
-            success = False
-            message = 'Token does not exist'
+@authorized
+def check_token(token):
+    session = database_helper.get_session_by_token(token)
+    if not session:
+        success = False
+        message = 'Token does not exist'
+    else:
+        success = True
+        message = 'Token exists'
 
     response = {}
     response['success'] = success
@@ -164,13 +163,14 @@ def check_token():
 
 @app.put('/change_password/')
 @cross_origin()
-def change_password():
+@authorized
+def change_password(token):
     data = request.get_json()
 
-    success, message = check_keys(['token', 'oldpassword', 'newpassword'], data)
+    success, message = check_keys(['oldpassword', 'newpassword'], data)
 
     if success:
-        success, message = change_user_password(data)
+        success, message = change_user_password(token, data)
 
     response = {}
     response['success'] = success
@@ -179,13 +179,9 @@ def change_password():
 
 @app.get('/get_user_messages_by_token/')
 @cross_origin()
-def get_user_messages_by_token():
-    data = request.args
-
-    success, message = check_keys(['token'], data)
-    messages = []
-    if success:
-        success, message, messages = get_user_messages(data['token'])
+@authorized
+def get_user_messages_by_token(token):
+    success, message, messages = get_user_messages(token)
     
     response = {}
     response['success'] = success
@@ -195,13 +191,14 @@ def get_user_messages_by_token():
 
 @app.get('/get_user_messages_by_email/')
 @cross_origin()
-def get_user_messages_by_email():
+@authorized
+def get_user_messages_by_email(token):
     data = request.args
 
-    success, message = check_keys(['token', 'email'], data)
+    success, message = check_keys(['email'], data)
     messages = []
     if success:
-        success, message, messages = get_user_messages(data['token'], data['email'])
+        success, message, messages = get_user_messages(token, data['email'])
     
     response = {}
     response['success'] = success
@@ -211,13 +208,9 @@ def get_user_messages_by_email():
 
 @app.get('/get_user_data_by_token/')
 @cross_origin()
-def get_user_data_by_token():
-    data = request.args
-
-    success, message = check_keys(['token'], data)
-    user_data = []
-    if success:
-        success, message, user_data = get_user_data(data['token'])
+@authorized
+def get_user_data_by_token(token):
+    success, message, user_data = get_user_data(token)
     
     response = {}
     response['success'] = success
@@ -227,13 +220,14 @@ def get_user_data_by_token():
 
 @app.get('/get_user_data_by_email/')
 @cross_origin()
-def get_user_data_by_email():
+@authorized
+def get_user_data_by_email(token):
     data = request.args
 
-    success, message = check_keys(['token', 'email'], data)
+    success, message = check_keys(['email'], data)
     user_data = []
     if success:
-        success, message, user_data = get_user_data(data['token'], data['email'])
+        success, message, user_data = get_user_data(token, data['email'])
     
     response = {}
     response['success'] = success
@@ -243,13 +237,18 @@ def get_user_data_by_email():
 
 @app.post('/post_message/')
 @cross_origin()
-def post_message():
+@authorized
+def post_message(token):
     data = request.get_json()
 
-    success, message = check_keys(['token', 'email'], data)
+    success, message = check_keys(['email'], data)
 
     if success:
-        success, message, author, _ = check_token_validity(data['token'])
+        success, message, author, _ = check_token_validity(token)
+    if success and not database_helper.user_exists(data['email']):
+        success, message = (False, 'User to write the message to does not exist')
+    if success and data['message'] is None or str(data['message']).strip() == '':
+        success, message = (False, 'Message is empty')
     if success:
         if data['message'] != "":
             database_helper.insert_message(author, data['message'], data['email'])
@@ -270,7 +269,7 @@ def check_keys(keys: list, data: dict) -> tuple[bool, str]:
     Checks if data contains the given keys.
     returns (False, <error message>) if there are keys missing, else (True, '')
     """
-    missing_keys = [key for key in keys if (key not in data.keys())]
+    missing_keys = [key for key in keys if key not in data.keys() or data[key] == None]
 
     success = not missing_keys
     message = '' if success else 'Invalid request! Missing the following data: ' + ', '.join(missing_keys)
@@ -290,7 +289,7 @@ def validate_signup_data(data) -> tuple[bool, str]:
     for key in SIGNUP_KEYS:
         if len(data[key].strip()) == 0:
             return (False, key + ' is empty')
-    if not re.match(r'.+@.+', data['email']):
+    if not re.match(r'.+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+', data['email']):
         return (False, 'Email is not valid')
     if data['gender'].lower() not in ['male', 'female', 'other']:
         return (False, 'Gender is not valid')
@@ -309,18 +308,17 @@ def validate_password(password: str) -> tuple[bool, str]:
         return (False, 'Password is not long enough')
     return (True, '')
 
-def change_user_password(data: {"token": str, "oldpassword": str, "newpassword": str}) -> tuple[bool, str]:
+def change_user_password(token, data: {"oldpassword": str, "newpassword": str}) -> tuple[bool, str]:
     """
     Changes the users password.
     The data has to be of the following type:
     `{
-    token: string,
     oldpassword: string,
     newpassword: string
     }`
     Returns `(success: boolean, success_message: string)`
     """
-    success, message, user, password = check_token_validity(data['token'])
+    success, message, user, password = check_token_validity(token)
     if not success:
         return (success, message)
     success, message = check_password(data['oldpassword'], password)
@@ -380,6 +378,8 @@ def check_token_validity(token: str) -> tuple[bool, str, str or None, str or Non
     Returns the following tuple:
     `(success: boolean, success_message: string, user: string | None, password: string | None)`
     """
+    if token is None:
+        return (False, 'Invalid token', None, None)
     up = database_helper.get_user_and_password_by_token(token)
     if not up:
         return (False, 'Invalid token', None, None)
@@ -429,6 +429,9 @@ def get_user_data(token: str, _user: str or None=None) -> tuple[bool, str, list]
     return (success, message, user_data)
 
 def save_user(user) -> tuple[bool, str]:
+    """
+    Checks if the user already exists and if not saves the new user in the database
+    """
     if database_helper.user_exists(user['email']):
         return (False, 'User with this email already exists')
     
@@ -437,6 +440,9 @@ def save_user(user) -> tuple[bool, str]:
     return (True, 'User created successfully')
 
 def close_all_sockets_from_user_except(user, _token=None):
+    """
+    Closes all sockets that are currently open for the user `user`
+    """
     # get old sessions
     sessions = database_helper.get_sessions_by_user(user)
     print(sessions, sockets)

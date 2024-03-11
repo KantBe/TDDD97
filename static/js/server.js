@@ -1,4 +1,5 @@
-const env = 'PROD'; // "DEV"
+const envs = {0: 'DEV', 1: 'PROD'};
+const env = envs[0];
 
 let PORT, URL;
 if (env === 'PROD') {
@@ -117,7 +118,9 @@ const server = {
 			return;
 		}
 		socket = new WebSocket(
-			`${env === 'PROD' ? 'wss' : 'ws'}://${URL}/websocket?token=${token}`
+			`${env === 'PROD' ? 'wss' : 'ws'}://${URL}${
+				env === 'PROD' ? '' : `:${PORT}`
+			}/websocket?token=${token}`
 		);
 		socket.addEventListener('open', () => {
 			socket.send(token);
