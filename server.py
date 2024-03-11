@@ -437,6 +437,7 @@ def save_user(user) -> tuple[bool, str]:
 def close_all_sockets_from_user_except(user, _token=None):
     # get old sessions
     sessions = database_helper.get_sessions_by_user(user)
+    print(sessions, sockets)
     for session in sessions:
         token = session[0]
         if token in sockets and token != _token:
