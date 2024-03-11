@@ -106,7 +106,7 @@ def signup():
 @app.get('/sign_out/')
 @cross_origin()
 def signout():
-    data = request.get_json()
+    data = request.args
     
     success, message = check_keys(['token'], data)
     
@@ -168,7 +168,7 @@ def change_password():
 @app.get('/get_user_messages_by_token/')
 @cross_origin()
 def get_user_messages_by_token():
-    data = request.get_json()
+    data = request.args
 
     success, message = check_keys(['token'], data)
     messages = []
@@ -184,7 +184,7 @@ def get_user_messages_by_token():
 @app.get('/get_user_messages_by_email/')
 @cross_origin()
 def get_user_messages_by_email():
-    data = request.get_json()
+    data = request.args
 
     success, message = check_keys(['token', 'email'], data)
     messages = []
@@ -197,10 +197,10 @@ def get_user_messages_by_email():
     response['data'] = messages
     return jsonify(response)
 
-@app.get('/get_user_data_by_token')
+@app.get('/get_user_data_by_token/')
 @cross_origin()
 def get_user_data_by_token():
-    data = request.get_json()
+    data = request.args
 
     success, message = check_keys(['token'], data)
     user_data = []
@@ -216,7 +216,7 @@ def get_user_data_by_token():
 @app.get('/get_user_data_by_email/')
 @cross_origin()
 def get_user_data_by_email():
-    data = request.get_json()
+    data = request.args
 
     success, message = check_keys(['token', 'email'], data)
     user_data = []
@@ -413,6 +413,7 @@ def get_user_data(token: str, _user: str or None=None) -> tuple[bool, str, list]
 
     message = 'Successfully retreived data for user ' + user
     user_data = raw_data[:1] + raw_data[2:]
+    
     return (success, message, user_data)
 
 def save_user(user) -> tuple[bool, str]:

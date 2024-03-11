@@ -94,7 +94,7 @@ window.onload = function () {
 	refresh();
 };
 
-signup = function () {
+signup = async function () {
 	const form = document.signup;
 	// first, we check if the password meets the criteria
 	if (!checkPassword(form)) {
@@ -113,7 +113,7 @@ signup = function () {
 	};
 
 	// and sign up the user
-	const res = server.signUp(data);
+	const res = await server.signUp(data);
 	if (res.success) {
 		// on success, we print a success message and sign in the user
 		toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
@@ -147,7 +147,6 @@ logout = async function () {
 	// so we get the token  and log out the user from the item
 	const token = getToken();
 	const res = await server.signOut(token);
-	console.log(res);
 	if (res.success) {
 		// this should always succeed if the user didn't mess around with the local storage
 		localStorage.removeItem('token');
@@ -161,7 +160,7 @@ logout = async function () {
 	toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
 };
 
-changePassword = function () {
+changePassword = async function () {
 	// check the password requirements first
 	const form = document.password_reset;
 	if (!checkPassword(form)) {
@@ -169,7 +168,7 @@ changePassword = function () {
 	}
 
 	// then change the password
-	const response = server.changePassword(
+	const response = await server.changePassword(
 		getToken(),
 		form.password_old.value,
 		form.password.value
@@ -201,7 +200,7 @@ checkPassword = function (form) {
 	return true;
 };
 
-reloadMessages = function (token) {
+reloadMessages = async function (token) {
 	// reload all the messages from the user with the given token and email
 	if (!token) {
 		token = getToken();
@@ -212,7 +211,7 @@ reloadMessages = function (token) {
 	clearHistory();
 
 	// get all messages by user and mail
-	const res = server.getUserMessagesByEmail(token, email);
+	const res = await server.getUserMessagesByEmail(token, email);
 
 	// if there is an error, show it to the user
 	if (!res.success) {
@@ -236,7 +235,7 @@ reloadMessages = function (token) {
 
 		const messageContent = document.createElement('div');
 		messageContent.className = 'message_content';
-		messageContent.innerText = message.content;
+		messageContent.innerText = message.message;
 		messageContainer.appendChild(messageContent);
 
 		history.appendChild(messageContainer);
@@ -251,7 +250,7 @@ invalid = function (element, message) {
 	element.reportValidity();
 };
 
-postMessage = function (token, email) {
+postMessage = async function (token, email) {
 	// we check if token and mail are given
 	if (!token) {
 		token = getToken();
@@ -267,7 +266,7 @@ postMessage = function (token, email) {
 		return;
 	}
 	// then we post the message
-	const res = server.postMessage(token, content, email);
+	const res = await server.postMessage(token, content, email);
 	if (!res.success) {
 		// on error, we display an error message
 		toastMessage(res.message, TOAST_MESSAGE.ERROR);
@@ -317,14 +316,14 @@ changeTab = function (tab, resetProfile) {
 /*****
 	UPDATE DATA
 *****/
-updateProfileInformation = function (token, email) {
+updateProfileInformation = async function (token, email) {
 	// this is the profile on the home page
 	let response;
 	// first we get the active user
-	const activeUser = server.getUserDataByToken(token);
+	const activeUser = await server.getUserDataByToken(token);
 	if (email) {
 		// if email is set, we want to load a different user
-		response = server.getUserDataByEmail(token, email);
+		response = await server.getUserDataByEmail(token, email);
 	} else {
 		response = activeUser;
 	}
@@ -342,21 +341,17 @@ updateProfileInformation = function (token, email) {
 		'#home > .personal_information > .return'
 	);
 	// based on the matching email
-	if (data.email !== activeUser.data.email) {
+	if (data[0] !== activeUser.data[0]) {
 		retButton.classList.remove('hidden');
 	} else {
 		retButton.classList.add('hidden');
 	}
 
 	// then we set all the profile information
-	document.getElementById(
-		'fullname'
-	).innerText = `${data.firstname} ${data.familyname}`;
-	document.getElementById('gender').innerText = data.gender;
-	document.getElementById('email').innerText = data.email;
-	document.getElementById(
-		'location'
-	).innerText = `${data.city}, ${data.country}`;
+	document.getElementById('fullname').innerText = `${data[1]} ${data[2]}`;
+	document.getElementById('gender').innerText = data[3];
+	document.getElementById('email').innerText = data[0];
+	document.getElementById('location').innerText = `${data[4]}, ${data[5]}`;
 
 	// and update the messages
 	reloadMessages(token);
@@ -375,13 +370,13 @@ clearHistory = function () {
 /****
 	SEARCH USER
 ****/
-searchUser = function (token) {
+searchUser = async function (token) {
 	// in case we want to search for a user
 	// we first get the searched value
 	const search = document.search.searchbar.value;
 
 	// then we search if a user with that email exists
-	const response = server.getUserDataByEmail(token, search);
+	const response = await server.getUserDataByEmail(token, search);
 	if (!response.success) {
 		// if not, we show an error
 		document.getElementById('search_results').innerText = response.message;
@@ -401,9 +396,9 @@ searchUser = function (token) {
 	// we update the search field to show the new user
 	const container = document.createElement('div');
 	container.className = 'user';
-	container.innerHTML = `${data.firstname} ${data.familyname}, ${data.email}`;
+	container.innerHTML = `${data[1]} ${data[2]}, ${data[0]}`;
 	container.addEventListener('click', () => {
-		updateProfileInformation(getToken(), data.email);
+		updateProfileInformation(getToken(), data[0]);
 		changeTab('home', false);
 	});
 	document.getElementById('search_results').innerHTML = '';
