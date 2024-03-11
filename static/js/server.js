@@ -8,7 +8,7 @@ if (env === 'PROD') {
 	PORT = 5000;
 	URL = 'localhost';
 }
-const API = `${URL === 'localhost' ? 'https' : 'http'}://${URL}:${PORT}`;
+const API = `${env === 'PROD' ? 'https' : 'http'}://${URL}:${PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 
 let socket;
@@ -117,7 +117,7 @@ const server = {
 			return;
 		}
 		socket = new WebSocket(
-			`${URL === 'localhost' ? 'ws' : 'wss'}://${URL}/websocket?token=${token}`
+			`${env === 'PROD' ? 'wss' : 'ws'}://${URL}/websocket?token=${token}`
 		);
 		socket.addEventListener('open', () => {
 			socket.send(token);
