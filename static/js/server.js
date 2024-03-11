@@ -1,5 +1,5 @@
 const PORT = 5000;
-const URL = 'localhost';
+const URL = '127.0.0.1';
 const API = `http://${URL}:${PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 

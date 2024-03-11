@@ -1,0 +1,6 @@
+Flask==3.0.2
+Flask_Cors==4.0.0
+flask_sock==0.7.0
+gunicorn==21.2.0
+python_bcrypt==0.3.2
+Requests==2.31.0
