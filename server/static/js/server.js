@@ -18,7 +18,11 @@ const sendRequest = async (type, url, data) => {
 	request.setRequestHeader('Content-Type', 'application/json');
 	request.setRequestHeader('Accept', 'application/json');
 
-	request.send(data);
+	if (data == null) {
+		request.send(data);
+	} else {
+		request.send(JSON.stringify(data));
+	}
 
 	return new Promise((resolve, reject) => {
 		request.onreadystatechange = () => {
@@ -34,38 +38,56 @@ const sendRequest = async (type, url, data) => {
 };
 
 const server = {
-	signUp: (data) => {
-		console.log('sign up', data);
+	signUp: async (data) => {
+		return sendRequest('POST', 'http://127.0.0.1:5000/sign_up/', data)
 	},
 
 	signIn: async (email, password) => {
-		return sendRequest('GET', 'http://localhost:5000/sign_in/', {
+		return sendRequest('GET', 'http://127.0.0.1:5000/sign_in/', {
 			username: email,
 			password: password,
 		});
 	},
 
-	signOut: (token) => {
-		console.log('sign out', token);
+	signOut: async (token) => {
+		return sendRequest('GET', 'http://127.0.0.1:5000/sign_out/', {
+			token: token,
+		});
 	},
 
-	changePassword: (token, oldPassword, newPassword) => {
-		console.log('change password', token, oldPassword, newPassword);
+	changePassword: async (token, oldPassword, newPassword) => {
+		return sendRequest('PUT', 'http://127.0.0.1:5000/change_password/', {
+			token: token,
+			oldpassword: oldPassword,
+			newpassword: newPassword,
+		});	
 	},
 
-	getUserMessagesByEmail: (token, email) => {
-		console.log('get user messages by email', token, email);
+	getUserMessagesByEmail: async (token, email) => {
+			return sendRequest('GET', 'http://127.0.0.1:5000/get_user_messages_by_email/', {
+			token: token,
+			email: email,
+		});
 	},
 
-	postMessage: (token, content, email) => {
-		console.log('post message', token, content, email);
+	postMessage: async (token, content, email) => {
+		return sendRequest('POST', 'http://127.0.0.1:5000/post_message/', {
+			token: token,
+			message: content,
+			email: email,
+		});
 	},
 
-	getUserDataByToken: (token) => {
-		console.log('get user data by token', token);
+	getUserDataByToken: async (token) => {
+		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_token/', {
+			token: token,
+		});
 	},
 
-	getUserDataByEmail: (token, email) => {
-		console.log('get user data by email', token, email);
+	getUserDataByEmail: async (token, email) => {
+		return sendRequest('GET', 'http://127.0.0.1:5000/get_user_data_by_email/', {
+			token: token,
+			email: email,
+		});
 	},
 };
