@@ -1,37 +1,18 @@
 let initialized;
 
-let prevId;
-let id = 0;
-
 let currentState;
-let _history = [];
+const url = {
+	login: '/profile/home',
+	logout: '/login',
+};
 
 window.addEventListener('popstate', (event) => {
-	prevId = id;
-	id = event.state.id;
-	goingForward = prevId - id < 0;
-
 	if (event.state.signinState !== currentState) {
-		console.log(id);
-		let delta = 0;
-		for (
-			let i = id;
-			i >= -1 && i <= _history.length;
-			i += goingForward ? 1 : -1
-		) {
-			if (i === -1 || i === _history.length) {
-				// there is no state after that
-				// return to where you came from
-				history.go(goingForward ? -1 : 1);
-				return;
-			}
-			if (_history[i] === currentState) {
-				break;
-			}
-			delta++;
-		}
-		history.go(delta * goingForward ? 1 : -1);
-		return;
+		history.replaceState(
+			{currentState, resetProfile: false},
+			'',
+			url[currentState]
+		);
 	}
 
 	const token = getToken();
@@ -66,11 +47,8 @@ const Router = {
 			currentState = signinState;
 			initialized = true;
 
-			_history.push(signinState);
-
 			history.replaceState(
 				{
-					id: id,
 					signinState,
 					resetProfile,
 				},
@@ -78,20 +56,15 @@ const Router = {
 				route
 			);
 		} else {
-			prevId = id;
 			history.pushState(
 				{
-					id: ++id,
 					signinState,
 					resetProfile,
 				},
 				'',
 				route
 			);
-			_history.splice(id);
-			_history.push(signinState);
 		}
-		console.log(route, id);
 	},
 };
 
