@@ -21,7 +21,7 @@ class FlaskAppTests(unittest.TestCase):
         pass
 
     def test_01_sign_up(self):
-        url = f'{self.base_url}/sign_up'
+        url = f'{self.base_url}/sign_up/'
         emails = [self.user_email, self.user_email, self.user_email_2]
         for index, email in enumerate(emails):
             data = {
@@ -62,7 +62,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"Test_01_sign_up failed: ❌ {ae}")
 
     def test_02_sign_up_invalidate_data(self):
-        url = f'{self.base_url}/sign_up'
+        url = f'{self.base_url}/sign_up/'
         invalid_email = f'invalid{random.randint(1, 100000000)}'
         invalid_emails = [f'{invalid_email}@example', f'{invalid_email}@.com', f'{invalid_email}@exa mple.com']
 
@@ -128,16 +128,16 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_02_sign_up_invalidate_data failed for missing {field}: ❌ {ae}")
 
     def test_03_sign_in(self):
-        url = f'{self.base_url}/sign_in'
+        url = f'{self.base_url}/sign_in/'
         passwords = ['password123', 'password1234', None]
         for password in passwords:
             data = {
-                'email': self.user_email,
+                'username': self.user_email,
                 'password': password
             }
 
             try:
-                response = requests.post(url, json=data)
+                response = requests.get(url, params=data)
                 response.raise_for_status()
                 result = response.json()
                 print(f'test_03_sign_in result: {result}')
@@ -172,7 +172,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_03_sign_in failed: ❌ {ae}")
 
     def test_04_change_password(self):
-        url = f'{self.base_url}/change_password'
+        url = f'{self.base_url}/change_password/'
         token = self.token
         if token is None:
             self.fail(f"Token is required for change password.")
@@ -201,9 +201,9 @@ class FlaskAppTests(unittest.TestCase):
         for i in range(len(combinations_dict_hardcoded)):
             try:
                 headers = {'Authorization': combinations_dict_hardcoded[i]["tokens"]}
-                response = requests.post(url, json={
-                    "old_password": combinations_dict_hardcoded[i]["old_passwords"],
-                    "new_password": combinations_dict_hardcoded[i]["new_passwords"]
+                response = requests.put(url, json={
+                    "oldpassword": combinations_dict_hardcoded[i]["old_passwords"],
+                    "newpassword": combinations_dict_hardcoded[i]["new_passwords"]
                 }, headers=headers)
                 response.raise_for_status()
                 result = response.json()
@@ -236,7 +236,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_04_change_password failed: ❌ {ae}")
 
     def test_05_get_user_data_by_token(self):
-        url = f'{self.base_url}/get_user_data_by_token'
+        url = f'{self.base_url}/get_user_data_by_token/'
         token = self.token
         if token is None:
             self.fail(f"Token is required for get user data by token.")
@@ -273,7 +273,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_05_get_user_data_by_token failed: ❌ {ae}")
 
     def test_06_get_user_data_by_email(self):
-        url = f'{self.base_url}/get_user_data_by_email'
+        url = f'{self.base_url}/get_user_data_by_email/'
         token = self.token
         if token is None:
             self.fail(f"Token is required for get user data by email.")
@@ -307,7 +307,7 @@ class FlaskAppTests(unittest.TestCase):
         for i in range(len(combination_dict)):
             try:
                 headers = {'Authorization': combination_dict[i]["token"]}
-                response = requests.post(url, json={
+                response = requests.get(url, params={
                     "email": combination_dict[i]["email"]
                 }, headers=headers)
                 response.raise_for_status()
@@ -349,7 +349,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_06_get_user_data_by_email failed: ❌ {ae}")
 
     def test_07_post_message(self):
-        url = f'{self.base_url}/post_message'
+        url = f'{self.base_url}/post_message/'
         token = self.token
         if token is None:
             self.fail(f"Token is required for post message.")
@@ -441,7 +441,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_07_post_message failed: ❌ {ae}")
 
     def test_08_get_user_messages_by_token(self):
-        url = f'{self.base_url}/get_user_messages_by_token'
+        url = f'{self.base_url}/get_user_messages_by_token/'
         token = self.token
         if token is None:
             self.fail(f"Token is required for get user messages by token.")
@@ -478,7 +478,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_08_get_user_messages_by_token failed: ❌ {ae}")
 
     def test_09_get_user_messages_by_email(self):
-        url = f'{self.base_url}/get_user_messages_by_email'
+        url = f'{self.base_url}/get_user_messages_by_email/'
         token = self.token
         if token is None:
             self.fail(f"Token is required for get user messages by email.")
@@ -512,7 +512,7 @@ class FlaskAppTests(unittest.TestCase):
         for i in range(len(combination_dict)):
             try:
                 headers = {'Authorization': combination_dict[i]["token"]}
-                response = requests.post(url, json={
+                response = requests.get(url, params={
                     "email": combination_dict[i]["email"]
                 }, headers=headers)
                 response.raise_for_status()
@@ -554,7 +554,7 @@ class FlaskAppTests(unittest.TestCase):
                 print(f"test_09_get_user_messages_by_email failed: ❌ {ae}")
 
     def test_10_sign_out(self):
-        url = f'{self.base_url}/sign_out'
+        url = f'{self.base_url}/sign_out/'
         token = self.token
         if token is None:
             self.fail(f"Token is required for sign out.")
@@ -563,7 +563,7 @@ class FlaskAppTests(unittest.TestCase):
         for token in tokens:
             try:
                 headers = {'Authorization': token}
-                response = requests.delete(url, headers=headers)
+                response = requests.get(url, headers=headers)
                 response.raise_for_status()
                 result = response.json()
                 print(f'test_10_sign_out result: {result}')

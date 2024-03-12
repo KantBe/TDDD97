@@ -21,6 +21,8 @@ refresh = async function () {
 	const token = getToken();
 	const res = await server.checkToken(token);
 
+	console.log(res);
+
 	if (token && res.success) {
 		// user is logged in
 		console.log('starting websocket');

@@ -1,6 +1,15 @@
-const PORT = 5000;
-const URL = 'localhost';
-const API = `http://${URL}:${PORT}`;
+const envs = {0: 'DEV', 1: 'PROD'};
+const env = envs[0];
+
+let PORT, URL;
+if (env === 'PROD') {
+	PORT = 443;
+	URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
+} else {
+	PORT = 5000;
+	URL = 'localhost';
+}
+const API = `${env === 'PROD' ? 'https' : 'http'}://${URL}:${PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 
 let socket;
@@ -108,28 +117,44 @@ const server = {
 			console.log('socket already exists');
 			return;
 		}
-		socket = new WebSocket(`ws://${URL}:${PORT}/websocket?token=${token}`);
+		socket = new WebSocket(
+			`${env === 'PROD' ? 'wss' : 'ws'}://${URL}${
+				env === 'PROD' ? '' : `:${PORT}`
+			}/websocket?token=${token}`
+		);
 		socket.addEventListener('open', () => {
 			socket.send(token);
 		});
 
+		let interval = setInterval(() => {
+			if (!socket) {
+				clearInterval(interval);
+				return;
+			}
+			socket.send('ping');
+		}, 5000);
+
 		socket.addEventListener('message', (event) => {
 			const data = event.data;
+			console.log('recieved data', data);
 			if (data === 'logout') {
-				localStorage.removeItem('token');
-				refresh();
-
-				// and send an information message to the user
-				toast.classList.remove('logged-in');
-				toastMessage(
-					'You were logged out due to another login to your account',
-					TOAST_MESSAGE.INFO
-				);
 			}
 		});
 
 		socket.addEventListener('close', (event) => {
 			console.log('closing socket', event);
+			clearInterval(interval);
+
+			localStorage.removeItem('token');
+			refresh();
+
+			// and send an information message to the user
+			toast.classList.remove('logged-in');
+			toastMessage(
+				'You were logged out due to another login to your account',
+				TOAST_MESSAGE.INFO
+			);
+
 			socket = undefined;
 		});
 	},
