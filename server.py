@@ -357,7 +357,7 @@ def validate_signup_data(data) -> tuple[int, str]:
     for key in SIGNUP_KEYS:
         if len(data[key].strip()) == 0:
             return (400, key + ' is empty')
-    if not re.match(r'.+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+', data['email']):
+    if not re.match(r'.+@.+', data['email']):
         return (400, 'Email is not valid')
     if data['gender'].lower() not in ['male', 'female', 'other']:
         return (400, 'Gender is not valid')

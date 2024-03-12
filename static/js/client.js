@@ -124,12 +124,25 @@ signup = function () {
 		.signUp(data)
 		.then((data) => {
 			// on success, we print a success message and sign in the user
-			toast.success(data.response.message);
+			toast.success('User signed up successfully');
 			login(data.email, data.password);
 		})
 		.catch((error) => {
 			// on error, we print the error message to the user
-			toast.error(error.response.message);
+			if (error.status === 409) {
+				invalid(form.email, '');
+				toast.error(
+					'User with this email already exists, please choose another email or login!'
+				);
+			} else if (
+				error.status === 400 ||
+				error.status === 405 ||
+				error.status === 500
+			) {
+				toast.error(
+					'There was an error with the system, please reload the page and try again!'
+				);
+			}
 		});
 };
 
@@ -144,10 +157,11 @@ login = function (email, password) {
 			refresh();
 
 			// also print out success message at the end
-			toast.success(res.response.message);
+			toast.success('Successfully logged in');
 		})
 		.catch((err) => {
 			console.log(err);
+			// print error message if the login was not successful
 			if (err.status === 401) {
 				toast.error('Wrong username or password');
 			} else if (err.status === 400 || err.status === 405) {
@@ -157,7 +171,6 @@ login = function (email, password) {
 					'There was an error processing your request, please try again!'
 				);
 			}
-			// print error message if the login was not successful
 		});
 };
 
@@ -190,7 +203,7 @@ changePassword = function () {
 		.then((res) => {
 			// on success, show success message and empty the form
 			form.reset();
-			toast.success(res.response.message);
+			toast.success('Password changed successfully');
 		})
 		.catch((error) => {
 			if (error.status === 401) {
@@ -294,11 +307,13 @@ postMessage = function (token, email) {
 			// on success, we update all values and reload the messages
 			document.post.reset();
 			reloadMessages(token);
-			toast.success(res.response.message);
+			toast.success('Message posted!');
 		})
 		.catch((error) => {
 			// on error, we display an error message
-			toast.error(error.response.message);
+			toast.error(
+				'There was an error posting the message, please reload the page and try again!'
+			);
 			return;
 		});
 };
@@ -422,9 +437,8 @@ searchUser = function (token) {
 		})
 		.catch((err) => {
 			// if not, we show an error
-			document.getElementById('search_results').innerText =
-				err.response.message;
-			toast.error(err.response.message);
+			document.getElementById('search_results').innerText = 'No user found';
+			toast.error('No user found');
 		});
 };
 
