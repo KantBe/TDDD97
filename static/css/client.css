@@ -25,6 +25,17 @@ html, body {
   border: 1px solid #666;
   border-radius: 10px;
 }
+.content form[name="search"] button {
+  height: 100%;
+}
+.content form[name="search"] input {
+  flex-grow: 1;
+}
+form[name="search"] {
+  display: flex;
+  align-items: center;
+  column-gap: 10px;
+}
 button {
   cursor: pointer;
 }
@@ -187,11 +198,14 @@ body, body * {
 
 .new_message textarea {
   resize: none;
-  width: 100%;
+  width: calc(100% - 12px);
   height: fit-content;
 }
 .new_message button {
   width: 100%;
+}
+.reload_messages {
+  margin: 10px auto;
 }
 
 .profile_information {

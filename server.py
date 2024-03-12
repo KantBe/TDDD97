@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS, cross_origin
-from flask_sock import Sock, ConnectionClosed
+from flask_sock import Sock, ConnectionClosed, Server
 import re, bcrypt
 
 from uuid import uuid4
 
-from decorators import authorized
+from decorators import authorized, check_token_validity
 
 import database_helper
 
@@ -23,25 +23,26 @@ sockets = {}
 database_helper.init_db(app)
 
 @sock.route('/websocket')
-def websocket(ws):
-    data = request.args
-    success, _ = check_keys(['token'], data)
-
-    if not success:
-        return
+def websocket(socket: Server):
+    check = check_token_validity()
+    if type(check) is Response:
+        return check
+    token = check
+    email = database_helper.get_username_by_token(token)
     
-    token = data['token']
     # then we send an acknowledgement
-    ws.send('received: ' + str(token))
+    socket.send('received: ' + str(email))
     # print(token)
-    sockets[token] = ws
+    
+    close_socket(email, False)
+    sockets[email] = socket
     
     while True:
         # we receive endlessly to keep the socket alive
-        msg = ws.receive()
+        msg = socket.receive()
         if msg:
             # also sends ping pong to keep alive
-            ws.send('pong')
+            socket.send('pong')
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -54,226 +55,293 @@ def send_client():
 @app.get('/sign_in/')
 @cross_origin()
 def signin():
+    """
+    #### status codes:
+    - 200: request successful
+    - 400: username or password are missing in the request data
+    - 401: username or password are wrong (as per `login_user`)
+    - 405: wrong method
+    - 500: an error occured
+    """
     data = request.args
 
-    success, message = check_keys(['username', 'password'], data)
-    
+    status_code, message = check_keys(['username', 'password'], data)
+
     auth_token = None
-    if success:
+    if status_code < 400:
         username = data['username']
         password = data['password']
         # do something if all keys are there
-        success, message = login_user(username, password)
+        status_code, message = login_user(username, password)
     
-    # success is only true if user is logged in
-    if success:
-        close_all_sockets_from_user_except(username)
+    # status code is only < 400 if user is logged in
+    if status_code < 400:
         auth_token = generate_token()
         database_helper.store_token(auth_token, username)
 
     response = {}
-    response['success'] = success
     response['message'] = message
     response['data'] = auth_token if auth_token else ''
     res = jsonify(response)
+    res.status_code = status_code
+
     res.headers.set('Authorization', auth_token)
     return res
 
 @app.get('/user_info/<username>')
 @cross_origin()
 def get_all_user_info(username):
+    """
+    #### status codes:
+    - 200: request successful
+    - 405: wrong method
+    - 500: an error occured
+    """
     response = {}
     response['info'] = database_helper.get_all_user_info(username)
     response['session'] = database_helper.get_sessions_by_user(username)
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = 200
+    return res
 
 @app.post('/sign_up/')
 @cross_origin()
 def signup():
+    """
+    #### status codes:
+    - 201: request successful
+    - 400: any of `SIGNUP_KEYS` are missing in the request data or are invalid
+    - 405: wrong method
+    - 409: user with email already exists in database
+    - 500: an error occured
+    """
     data = request.get_json()
-    success, message = check_keys(SIGNUP_KEYS, data)
+    status_code, message = check_keys(SIGNUP_KEYS, data)
 
-    if success:
+    if status_code < 400:
         # check if the data fields are valid
-        success, message = validate_signup_data(data)
-        if success:
-            success, message = validate_password(data['password'])
-    
-    if success:
+        status_code, message = validate_signup_data(data)
+        if status_code < 400:
+            status_code, message = validate_password(data['password'])
+
+    if status_code < 400:
         # save the user and encrypt the password
         data['password'] = encrypt_password(\
                 data['password'].encode('utf-8')\
             ).decode('utf-8')
         # print(data)
-        success, message = save_user(data)
+        status_code, message = save_user(data)
 
     response = {}
-    response['success'] = success
     response['message'] = message
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
 
 @app.get('/sign_out/')
 @cross_origin()
 @authorized
 def signout(token):
+    """
+    #### status codes:
+    - 200: request successful
+    - 401: token not in request or invalid (as per `@authorized`)
+    - 405: wrong method
+    - 500: an error occured
+    """
     # check if user with this token is logged in
     # and log out user
-    session = database_helper.get_session_by_token(token)
-    print(session)
-    if not session:
-        success = False
-        message = 'No session with the given token exists'
-    else:
-        if token in sockets:
-            print('closing socket', token)
-            try:
-                sockets[token].send('logout')
-                sockets[token].close(reason=1000)
-            except ConnectionClosed:
-                print('socket with token', token, 'already closed')
-                pass
-            del sockets[token]
-        
-        res = database_helper.delete_session_by_token(token)
-        print(res)
-        success = True
-        message = 'Successfully logged out user'
+    email = database_helper.get_username_by_token(token)
+    close_socket(email, True)
+    
+    database_helper.delete_session_by_token(token)
+    message = 'Successfully logged out user'
     
     response = {}
-    response['success'] = success
     response['message'] = message
+    # we can return jsonfiy here since default status code is 200
     return jsonify(response)
 
 @app.get('/check_token')
 @cross_origin()
 @authorized
 def check_token(token):
-    session = database_helper.get_session_by_token(token)
-    if not session:
-        success = False
-        message = 'Token does not exist'
-    else:
-        success = True
-        message = 'Token exists'
-
-    response = {}
-    response['success'] = success
-    response['message'] = message
-    return jsonify(response)
+    """
+    #### status codes:
+    - 200: request successful
+    - 401: token not in request or invalid (as per `@authorized`)
+    - 405: wrong method
+    - 500: an error occured
+    """
+    return jsonify({'message': 'Valid token'})
 
 @app.put('/change_password/')
 @cross_origin()
 @authorized
 def change_password(token):
+    """
+    #### status codes:
+    - 200: request successful
+    - 400: `oldpassword` or `newpassword` are missing in the request's body
+    or new password is not of valid form
+    - 401: token not in request or invalid (as per `@authorized`) or old password is wrong
+    - 405: wrong method
+    - 500: an error occured
+    """
     data = request.get_json()
 
-    success, message = check_keys(['oldpassword', 'newpassword'], data)
+    status_code, message = check_keys(['oldpassword', 'newpassword'], data)
 
-    if success:
-        success, message = change_user_password(token, data)
+    if status_code < 400:
+        status_code, message = change_user_password(token, data)
 
     response = {}
-    response['success'] = success
     response['message'] = message
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
 
 @app.get('/get_user_messages_by_token/')
 @cross_origin()
 @authorized
 def get_user_messages_by_token(token):
-    success, message, messages = get_user_messages(token)
+    """
+    #### status codes:
+    - 200: request successful
+    - 401: token not in request or invalid (as per `@authorized`)
+    - 405: wrong method
+    - 500: an error occured
+    """
+    status_code, message, messages = get_user_messages(token)
     
     response = {}
-    response['success'] = success
     response['message'] = message
     response['data'] = messages
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
 
 @app.get('/get_user_messages_by_email/')
 @cross_origin()
 @authorized
 def get_user_messages_by_email(token):
+    """
+    #### status codes:
+    - 200: request successful
+    - 400: `email` is not in request data
+    - 401: token not in request or invalid (as per `@authorized`)
+    - 404: user to get messages from doesn't exist
+    - 405: wrong method
+    - 500: an error occured
+    """
     data = request.args
 
-    success, message = check_keys(['email'], data)
+    status_code, message = check_keys(['email'], data)
     messages = []
-    if success:
-        success, message, messages = get_user_messages(token, data['email'])
+    if status_code < 400:
+        status_code, message, messages = get_user_messages(token, data['email'])
     
     response = {}
-    response['success'] = success
     response['message'] = message
     response['data'] = messages
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
 
 @app.get('/get_user_data_by_token/')
 @cross_origin()
 @authorized
 def get_user_data_by_token(token):
-    success, message, user_data = get_user_data(token)
+    """
+    #### status codes:
+    - 200: request successful
+    - 401: token not in request or invalid (as per `@authorized`)
+    - 405: wrong method
+    - 500: an error occured
+    """
+    status_code, message, user_data = get_user_data(token)
     
     response = {}
-    response['success'] = success
     response['message'] = message
     response['data'] = user_data
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
 
 @app.get('/get_user_data_by_email/')
 @cross_origin()
 @authorized
 def get_user_data_by_email(token):
+    """
+    #### status codes:
+    - 200: request successful
+    - 400: `email` does not exist in request data
+    - 401: token not in request or invalid (as per `@authorized`)
+    - 404: user to get data from does not exist
+    - 405: wrong method
+    - 500: an error occured
+    """
     data = request.args
 
-    success, message = check_keys(['email'], data)
+    status_code, message = check_keys(['email'], data)
     user_data = []
-    if success:
-        success, message, user_data = get_user_data(token, data['email'])
+    if status_code < 400:
+        status_code, message, user_data = get_user_data(token, data['email'])
     
     response = {}
-    response['success'] = success
     response['message'] = message
     response['data'] = user_data
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
 
 @app.post('/post_message/')
 @cross_origin()
 @authorized
 def post_message(token):
+    """
+    #### status codes:
+    - 201: request successful
+    - 400: 
+        - `email` does not exist in data or is None
+        - `message` does not exist in data or is empty
+    - 401: token not in request or invalid (as per `@authorized`)
+    - 404: email of the user, on whom's board the message should be posted, does not exit
+    - 405: wrong method
+    - 500: an error occured
+    """
     data = request.get_json()
 
-    success, message = check_keys(['email'], data)
+    status_code, message = check_keys(['message', 'email'], data)
 
-    if success:
-        success, message, author, _ = check_token_validity(token)
-    if success and not database_helper.user_exists(data['email']):
-        success, message = (False, 'User to write the message to does not exist')
-    if success and data['message'] is None or str(data['message']).strip() == '':
-        success, message = (False, 'Message is empty')
-    if success:
-        if data['message'] != "":
-            database_helper.insert_message(author, data['message'], data['email'])
-        else:
-            success = False
-            message = 'Message cannot be empty'
+    if status_code < 400 and not database_helper.user_exists(data['email']):
+        status_code, message = (404, 'User to write the message to does not exist')
+    if status_code < 400 and data['message'] is None or str(data['message']).strip() == '':
+        status_code, message = (400, 'Message is empty')
+    if status_code < 400:
+        author = database_helper.get_username_by_token(token)
+        database_helper.insert_message(author, data['message'], data['email'])
+        status_code = 201
 
     response = {}
-    response['success'] = success
     response['message'] = message
-    return jsonify(response)
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
 
 ###########################
 # HELPER FUNCTIONS
 ###########################
-def check_keys(keys: list, data: dict) -> tuple[bool, str]:
+def check_keys(keys: list, data: dict) -> tuple[int, str]:
     """
     Checks if data contains the given keys.
-    returns (False, <error message>) if there are keys missing, else (True, '')
+    returns `(400, <error message>)`  if there are keys missing/`NoneType`, else `(200, '')`
     """
     missing_keys = [key for key in keys if key not in data.keys() or data[key] == None]
 
     success = not missing_keys
     message = '' if success else 'Invalid request! Missing the following data: ' + ', '.join(missing_keys)
-    return (success, message)
+    return (200 if success else 400, message)
 
 def generate_token():
     """
@@ -281,34 +349,34 @@ def generate_token():
     """
     return str(uuid4())
 
-def validate_signup_data(data) -> tuple[bool, str]:
+def validate_signup_data(data) -> tuple[int, str]:
     """
     Checks whether the signup data is valid (e.g. empty fields or invalid email)
     returns (False, <error message>) for invalid data, else (True, '')
     """
     for key in SIGNUP_KEYS:
         if len(data[key].strip()) == 0:
-            return (False, key + ' is empty')
+            return (400, key + ' is empty')
     if not re.match(r'.+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+', data['email']):
-        return (False, 'Email is not valid')
+        return (400, 'Email is not valid')
     if data['gender'].lower() not in ['male', 'female', 'other']:
-        return (False, 'Gender is not valid')
+        return (400, 'Gender is not valid')
     else:
         data['gender'] = data['gender'].upper()
     
-    return (True, '')
+    return (200, '')
 
-def validate_password(password: str) -> tuple[bool, str]:
+def validate_password(password: str) -> tuple[int, str]:
     """
     Checks if the password is of valid length
     returns (False, 'Password is not long enough') if not, (True, '') if it is
     """
     # print(len(password), password)
-    if len(password) < 8:
-        return (False, 'Password is not long enough')
-    return (True, '')
+    if password is None or len(password) < 8:
+        return (400, 'Password is not long enough')
+    return (200, '')
 
-def change_user_password(token, data: {"oldpassword": str, "newpassword": str}) -> tuple[bool, str]:
+def change_user_password(token, data) -> tuple[int, str]:
     """
     Changes the users password.
     The data has to be of the following type:
@@ -318,27 +386,30 @@ def change_user_password(token, data: {"oldpassword": str, "newpassword": str}) 
     }`
     Returns `(success: boolean, success_message: string)`
     """
-    success, message, user, password = check_token_validity(token)
-    if not success:
-        return (success, message)
+    # this should always return values, as the token is valid
+    user, password = database_helper.get_user_and_password_by_token(token)
+
     success, message = check_password(data['oldpassword'], password)
     if not success:
-        return (success, message)
-    success, message = validate_password(data['newpassword'])
-    if not success:
-        return (success, message)
+        return (401, message)
+    status_code, message = validate_password(data['newpassword'])
+    if status_code >= 400:
+        return (status_code, message)
 
     password = encrypt_password(data['newpassword']).decode('utf-8')
     database_helper.update_password_by_username(user, password)
     message = 'Password updated successfully'
-    return (success, message)
+    return (200, message)
 
 
 # def login_user(username: str, password: str | bytes):
-def login_user(username: str, password: str or bytes):
+def login_user(username: str, password: str | bytes) -> tuple[int, str]:
     """
     Tries to login the user with the given username and password.
-    Returns `(success: boolean, success_message: string)`
+    Returns `(status_code: int, success_message: string)`
+    where status_code is:
+    - 200 on successful login
+    - 401 when username or password are wrong
     """
     # up = username + password
     up = database_helper.get_user_and_password_by_username(username)
@@ -349,9 +420,9 @@ def login_user(username: str, password: str or bytes):
     else:
         success = False
         message = 'Invalid username'
-    return (success, message)
+    return (200 if success else 401, message)
 
-def encrypt_password(password: str or bytes) -> bytes:
+def encrypt_password(password: str | bytes) -> bytes:
     """
     Encrypts the password and returns it.
     """
@@ -359,7 +430,7 @@ def encrypt_password(password: str or bytes) -> bytes:
         password = password.encode('utf-8')
     return bcrypt.hashpw(password, bcrypt.gensalt())
 
-def check_password(password: str or bytes, encrypted_password: str or bytes) -> tuple[bool, str]:
+def check_password(password: str | bytes, encrypted_password: str | bytes) -> tuple[bool, str]:
     """
     Checks if `password` (unencrypted) matches with `encrypted_password` (encrypted).
     Returns `(success: bool, success_message: string)`
@@ -372,88 +443,69 @@ def check_password(password: str or bytes, encrypted_password: str or bytes) -> 
     success = bcrypt.checkpw(password, encrypted_password)
     return (success, 'User signed in successfully' if success else 'Password invalid')
 
-def check_token_validity(token: str) -> tuple[bool, str, str or None, str or None]:
-    """
-    Checks if the given token is valid and returns the corresponding user and password if it is.
-    Returns the following tuple:
-    `(success: boolean, success_message: string, user: string | None, password: string | None)`
-    """
-    if token is None:
-        return (False, 'Invalid token', None, None)
-    up = database_helper.get_user_and_password_by_token(token)
-    if not up:
-        return (False, 'Invalid token', None, None)
-    user, password = up
-    return (True, 'Token is valid', user, password)
-
-def get_user_messages(token: str, _user: str or None=None) -> tuple[bool, str, list]:
+def get_user_messages(token: str, _user=None) -> tuple[int, str, list]:
     """
     Retrieves all the user messages of the given user with the given token.
     If user is None (default), the messages of the user with the given token will be retrieved instead.
-    Returns: `(success: bool, success_message: string, messages: list({ writer:string, message: string }))`
+    Returns: `(status_code: int, success_message: string, messages: list({ writer:string, message: string }))`
+
+    Status codes:
+    - 200: message retrieved successfully
+    - 400: user to get messages from doesn't exist
     """
-    messages = []
-    success, message, user, _ = check_token_validity(token)
-    if not success:
-        return (success, message, messages)
-    
+    messages = []    
+
     if _user and not database_helper.user_exists(_user):
-        return (False, 'No user with this email exists', messages)
+        return (404, 'No user with this email exists', messages)
     
+    user = database_helper.get_username_by_token(token)
     raw_messages = database_helper.get_messages_writer_and_text_by_user(_user if _user else user)
     message = 'Successfully retreived messages for user ' + user
     for m in raw_messages:
         messages.append({'writer': m[0], 'message': m[1]})
 
-    return (success, message, messages)
+    return (200, message, messages)
 
-def get_user_data(token: str, _user: str or None=None) -> tuple[bool, str, list]:
+def get_user_data(token: str, _user=None) -> tuple[int, str, list]:
     """
     Retrieves all the user data of the given user with the given token.
     If user is None (default), the data of the user with the given token will be retrieved instead.
     Returns: `(success: bool, success_message: string, user_data: list({ writer:string, message: string }))`
     """
     user_data = []
-    success, message, user, _ = check_token_validity(token)
-    if not success:
-        return (success, message, user_data)
-    
+
+    user = database_helper.get_username_by_token(token)
+
     if _user and not database_helper.user_exists(_user):
-        return (False, 'No user with this email exists', user_data)
+        return (404, 'No user with this email exists', user_data)
     
     raw_data = database_helper.get_all_user_info(_user if _user else user)
 
     message = 'Successfully retreived data for user ' + user
     user_data = raw_data[:1] + raw_data[2:]
     
-    return (success, message, user_data)
+    return (200, message, user_data)
 
-def save_user(user) -> tuple[bool, str]:
+def save_user(user) -> tuple[int, str]:
     """
-    Checks if the user already exists and if not saves the new user in the database
+    Checks if the user already exists and if not saves the new user in the database.
+    Returns `(201, message)` if insert was successful and `(409, message)` if user already exists
     """
     if database_helper.user_exists(user['email']):
-        return (False, 'User with this email already exists')
+        return (409, 'User with this email already exists')
     
     user = (user['email'], user['password'], user['firstname'], user['familyname'], user['gender'], user['city'], user['country'])
-    database_helper.insert_user(user)
-    return (True, 'User created successfully')
+    database_helper.create_user(user)
+    return (201, 'User created successfully')
 
-def close_all_sockets_from_user_except(user, _token=None):
-    """
-    Closes all sockets that are currently open for the user `user`
-    """
-    # get old sessions
-    sessions = database_helper.get_sessions_by_user(user)
-    print(sessions, sockets)
-    for session in sessions:
-        token = session[0]
-        if token in sockets and token != _token:
-            print('closing socket', token)
-            try:
-                sockets[token].send('logout')
-                sockets[token].close(reason=1000)
-            except ConnectionClosed:
-                print('socket with token', token, 'already closed')
-                pass
-            del sockets[token]
+def close_socket(email, manual_logout):
+    print('trying to close socket', email, sockets)
+    if email in sockets:
+        print('closing socket', email)
+        try:
+            if not manual_logout:
+                sockets[email].send('logout')
+            sockets[email].close()
+        except ConnectionClosed:
+            print('socket with email', email, 'already closed')
+        del sockets[email]

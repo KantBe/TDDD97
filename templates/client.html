@@ -149,7 +149,12 @@
 					<h3>Change password</h3>
 					<form name="password_reset" class="password-reset">
 						<label for="pw-reset-old">Current Password</label>
-						<input type="password" name="password_old" id="pw-reset-old" />
+						<input
+							type="password"
+							name="password_old"
+							id="pw-reset-old"
+							oninput="this.setCustomValidity('')"
+						/>
 
 						<label for="pw-reset-new">New Password</label>
 						<input

@@ -36,7 +36,7 @@ def query_db(query, args=(), one=False, commit=False):
 ###########
 #   USER
 ###########
-def insert_user(user: tuple[str, str, str, str, str, str, str]):
+def create_user(user: tuple[str, str, str, str, str, str, str]):
     return query_db("INSERT INTO user VALUES(?, ?, ?, ?, ?, ?, ?)", args=user, commit=True)
 
 def get_user_by_username(username):
@@ -51,6 +51,10 @@ def get_user_and_password_by_username(username):
 def get_user_and_password_by_token(token):
     return query_db("SELECT u.username, u.password FROM user u "\
         + "JOIN user_session us ON us.user = u.username WHERE us.token LIKE '%s'" % (token), one=True)
+
+def get_username_by_token(token):
+    return query_db("SELECT u.username FROM user u "\
+        + "JOIN user_session us ON us.user = u.username WHERE us.token LIKE '%s'" % (token), one=True)[0]
 
 def update_password_by_username(username, password):
     return query_db("UPDATE user SET password = '%s' WHERE username LIKE '%s'" % (password, username), commit=True)

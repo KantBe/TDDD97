@@ -1,6 +1,6 @@
 const MIN_LENGTH_PASSWORD = 8;
 const PROFILE_TABS = ['home', 'browse', 'account'];
-let toast;
+let toastElement;
 
 getToken = function () {
 	return localStorage.getItem('token');
@@ -12,32 +12,42 @@ displayView = function (id) {
 	document.getElementById('content').innerHTML = view.innerHTML;
 };
 
-refresh = async function () {
+refresh = function () {
 	console.log('refreshing');
 	// first we reset our content div
 	document.getElementById('content').innerHTML = '';
 
 	// then we get our current saved token and user
 	const token = getToken();
-	const res = await server.checkToken(token);
-
-	console.log(res);
-
-	if (token && res.success) {
-		// user is logged in
-		console.log('starting websocket');
-		server.websocket(token);
-		loadProfile(token);
-	} else {
-		// user is not logged in
+	if (!token) {
+		// we remove the token
+		localStorage.removeItem('token');
+		// and load the login page
 		loadLoginPage(token);
+		return;
 	}
+
+	// we only check the token if it is set
+	server
+		.checkToken(token)
+		.then(() => {
+			// user is logged in
+			console.log('starting websocket');
+			server.websocket(token);
+			loadProfile(token);
+		})
+		.catch(() => {
+			// we remove the token
+			localStorage.removeItem('token');
+			// and load the login page
+			loadLoginPage(token);
+		});
 };
 
 loadProfile = function (token) {
 	// update view and message display
 	displayView('profileView');
-	toast.classList.add('logged-in');
+	toastElement.classList.add('logged-in');
 
 	// we clear all our test data
 	clearHistory();
@@ -50,7 +60,7 @@ loadProfile = function (token) {
 	if (!tab || !PROFILE_TABS.includes(tab)) {
 		sessionStorage.setItem('activeTab', 'home');
 	}
-	changeTab(sessionStorage.getItem('activeTab'));
+	changeTab(sessionStorage.getItem('activeTab'), false);
 
 	// and add some event listeners for the forms
 	document.password_reset.addEventListener('submit', (e) => {
@@ -67,12 +77,7 @@ loadProfile = function (token) {
 	});
 };
 
-loadLoginPage = function (token) {
-	if (token) {
-		// we remove the token
-		localStorage.removeItem('token');
-	}
-
+loadLoginPage = () => {
 	// we display our sign up view
 	displayView('welcomeView');
 
@@ -89,14 +94,14 @@ loadLoginPage = function (token) {
 
 window.onload = function () {
 	// this is for message display, needs to be done once per page load
-	toast = document.getElementById('toast');
-	toast.classList = [];
+	toastElement = document.getElementById('toast');
+	toastElement.classList = [];
 
 	// on window load, we refresh the page to update our content div
 	refresh();
 };
 
-signup = async function () {
+signup = function () {
 	const form = document.signup;
 	// first, we check if the password meets the criteria
 	if (!checkPassword(form)) {
@@ -115,54 +120,64 @@ signup = async function () {
 	};
 
 	// and sign up the user
-	const res = await server.signUp(data);
-	if (res.success) {
-		// on success, we print a success message and sign in the user
-		toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
-		login(data.email, data.password);
-	} else {
-		// on error, we print the error message to the user
-		toastMessage(res.message, TOAST_MESSAGE.ERROR);
-	}
+	server
+		.signUp(data)
+		.then((data) => {
+			// on success, we print a success message and sign in the user
+			toast.success(data.response.message);
+			login(data.email, data.password);
+		})
+		.catch((error) => {
+			// on error, we print the error message to the user
+			toast.error(error.response.message);
+		});
 };
 
-login = async function (email, password) {
+login = function (email, password) {
 	// try to sign in the user
-	const res = await server.signIn(email, password);
+	server
+		.signIn(email, password)
+		.then((res) => {
+			// in case of success, we reset our tab to home, set the token and refresh the page
+			sessionStorage.setItem('activeTab', 'home');
+			localStorage.setItem('token', res.response.data);
+			refresh();
 
-	if (res.success) {
-		// in case of success, we reset our tab to home, set the token and refresh the page
-		sessionStorage.setItem('activeTab', 'home');
-		localStorage.setItem('token', res.data);
-		refresh();
-
-		// also print out success message at the end
-		toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
-	} else {
-		// print error message if the login was not successful
-		toastMessage(res.message, TOAST_MESSAGE.ERROR);
-	}
+			// also print out success message at the end
+			toast.success(res.response.message);
+		})
+		.catch((err) => {
+			console.log(err);
+			if (err.status === 401) {
+				toast.error('Wrong username or password');
+			} else if (err.status === 400 || err.status === 405) {
+				toast.error(err.response.message);
+			} else if (err.status === 500) {
+				toast.error(
+					'There was an error processing your request, please try again!'
+				);
+			}
+			// print error message if the login was not successful
+		});
 };
 
-logout = async function () {
+logout = function () {
 	// user wants to log out
 	// so we get the token  and log out the user from the item
 	const token = getToken();
-	const res = await server.signOut(token);
-	if (res.success) {
-		// this should always succeed if the user didn't mess around with the local storage
+	server.signOut(token).finally(() => {
 		localStorage.removeItem('token');
-	}
 
-	// we refresh our page
-	refresh();
+		// we refresh our page
+		refresh();
 
-	// and send a confirmation message to the user
-	toast.classList.remove('logged-in');
-	toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
+		// and send a confirmation message to the user
+		toastElement.classList.remove('logged-in');
+		toast.success('User logged out successfully');
+	});
 };
 
-changePassword = async function () {
+changePassword = function () {
 	// check the password requirements first
 	const form = document.password_reset;
 	if (!checkPassword(form)) {
@@ -170,20 +185,22 @@ changePassword = async function () {
 	}
 
 	// then change the password
-	const response = await server.changePassword(
-		getToken(),
-		form.password_old.value,
-		form.password.value
-	);
-
-	if (response.success) {
-		// on success, show success message and empty the form
-		form.reset();
-		toastMessage(response.message, TOAST_MESSAGE.SUCCESS);
-	} else {
-		// on error display error message
-		toastMessage(response.message, TOAST_MESSAGE.ERROR);
-	}
+	server
+		.changePassword(getToken(), form.password_old.value, form.password.value)
+		.then((res) => {
+			// on success, show success message and empty the form
+			form.reset();
+			toast.success(res.response.message);
+		})
+		.catch((error) => {
+			if (error.status === 401) {
+				invalid(form.password_old, 'Wrong password!');
+				toast.error('Wrong password!');
+			} else if (error.status === 400) {
+				// on error display error message
+				toast.error(error.response.message);
+			}
+		});
 };
 
 checkPassword = function (form) {
@@ -202,7 +219,7 @@ checkPassword = function (form) {
 	return true;
 };
 
-reloadMessages = async function (token) {
+reloadMessages = function (token) {
 	// reload all the messages from the user with the given token and email
 	if (!token) {
 		token = getToken();
@@ -213,17 +230,21 @@ reloadMessages = async function (token) {
 	clearHistory();
 
 	// get all messages by user and mail
-	const res = await server.getUserMessagesByEmail(token, email);
+	server
+		.getUserMessagesByEmail(token, email)
+		.then((res) => {
+			displayMessageHistory(res.response.data);
+			// inform user in case it's needed
+			toast.success('User messages updated!');
+		})
+		.catch((error) => {
+			toast.error(
+				'There was an error updating the messages, please reload the page!'
+			);
+		});
+};
 
-	// if there is an error, show it to the user
-	if (!res.success) {
-		toastMessage(res.message, TOAST_MESSAGE.ERROR);
-		return;
-	}
-
-	// now get all the data
-	const data = res.data;
-
+displayMessageHistory = (data) => {
 	// and add it to the message history
 	const history = document.getElementById('history');
 	for (const message of data) {
@@ -242,8 +263,6 @@ reloadMessages = async function (token) {
 
 		history.appendChild(messageContainer);
 	}
-	// inform user in case it's needed
-	toastMessage('User messages updated!', TOAST_MESSAGE.SUCCESS);
 };
 
 invalid = function (element, message) {
@@ -252,7 +271,7 @@ invalid = function (element, message) {
 	element.reportValidity();
 };
 
-postMessage = async function (token, email) {
+postMessage = function (token, email) {
 	// we check if token and mail are given
 	if (!token) {
 		token = getToken();
@@ -261,6 +280,7 @@ postMessage = async function (token, email) {
 		email = document.getElementById('email').innerText;
 	}
 
+	console.log(token);
 	// then we retrieve the content
 	const content = document.post.message.value;
 	// and check if it's empty
@@ -268,17 +288,19 @@ postMessage = async function (token, email) {
 		return;
 	}
 	// then we post the message
-	const res = await server.postMessage(token, content, email);
-	if (!res.success) {
-		// on error, we display an error message
-		toastMessage(res.message, TOAST_MESSAGE.ERROR);
-		return;
-	}
-
-	// on success, we update all values and reload the messages
-	document.post.reset();
-	reloadMessages(token);
-	toastMessage(res.message, TOAST_MESSAGE.SUCCESS);
+	server
+		.postMessage(token, content, email)
+		.then((res) => {
+			// on success, we update all values and reload the messages
+			document.post.reset();
+			reloadMessages(token);
+			toast.success(res.response.message);
+		})
+		.catch((error) => {
+			// on error, we display an error message
+			toast.error(error.response.message);
+			return;
+		});
 };
 
 /*****
@@ -322,19 +344,25 @@ updateProfileInformation = async function (token, email) {
 	// this is the profile on the home page
 	let response;
 	// first we get the active user
-	const activeUser = await server.getUserDataByToken(token);
+	const activeUser = (await server.getUserDataByToken(token)).response;
 	if (email) {
 		// if email is set, we want to load a different user
-		response = await server.getUserDataByEmail(token, email);
+		try {
+			response = (await server.getUserDataByEmail(token, email)).response;
+		} catch (error) {
+			console.error(error);
+			toast.error(`There was an error display user ${email}`);
+			response = activeUser;
+		}
 	} else {
 		response = activeUser;
 	}
 	// then we load the data
 	const data = response.data;
 
-	if (!response.success || !data) {
+	if (!data) {
 		// if there was an error retrieving the messages, we display it to the user
-		toastMessage(response.message, TOAST_MESSAGE.ERROR);
+		toast.error(response.message);
 		return;
 	}
 
@@ -372,29 +400,35 @@ clearHistory = function () {
 /****
 	SEARCH USER
 ****/
-searchUser = async function (token) {
+searchUser = function (token) {
 	// in case we want to search for a user
 	// we first get the searched value
 	const search = document.search.searchbar.value;
 
 	// then we search if a user with that email exists
-	const response = await server.getUserDataByEmail(token, search);
-	if (!response.success) {
-		// if not, we show an error
-		document.getElementById('search_results').innerText = response.message;
-		toastMessage(response.message, TOAST_MESSAGE.ERROR);
-		return;
-	}
-	// if data was returned, we check it
-	const data = response.data;
-	if (!data) {
-		// no data means the search somehow still failed, so we still display an error
-		document.getElementById('search_result').innerText =
-			'Search failed, please try again!';
-		toastMessage('No data returned!', TOAST_MESSAGE.ERROR);
-		return;
-	}
+	server
+		.getUserDataByEmail(token, search)
+		.then((res) => {
+			// if data was returned, we check it
+			const data = res.response.data;
+			if (!data) {
+				// no data means the search somehow still failed, so we still display an error
+				document.getElementById('search_result').innerText =
+					'Search failed, please try again!';
+				toast.error('No data returned!');
+			} else {
+				updateSearchResults(data);
+			}
+		})
+		.catch((err) => {
+			// if not, we show an error
+			document.getElementById('search_results').innerText =
+				err.response.message;
+			toast.error(err.response.message);
+		});
+};
 
+const updateSearchResults = (data) => {
 	// we update the search field to show the new user
 	const container = document.createElement('div');
 	container.className = 'user';
@@ -413,24 +447,36 @@ searchUser = async function (token) {
 const TOAST_MESSAGE = {SUCCESS: 'success', ERROR: 'error', INFO: 'info'};
 let timeoutId;
 
+const toast = {
+	error: (message) => {
+		toastMessage(message, TOAST_MESSAGE.ERROR);
+	},
+	success: (message) => {
+		toastMessage(message, TOAST_MESSAGE.SUCCESS);
+	},
+	info: (message) => {
+		toastMessage(message, TOAST_MESSAGE.INFO);
+	},
+};
+
 toastMessage = function (message, type) {
 	// we either log or error the toast as well
 	(console[type] || console.log)(message);
 	// super simple toast messager
 	if (typeof type === 'string') {
-		toast.classList.add(type.toLowerCase());
+		toastElement.classList.add(type.toLowerCase());
 	} else {
 		type = '';
 	}
-	toast.innerText = message;
-	toast.classList.add('show');
+	toastElement.innerText = message;
+	toastElement.classList.add('show');
 
 	if (timeoutId) {
 		clearInterval(timeoutId);
 	}
 	timeoutId = setTimeout(() => {
-		toast.classList.remove('show');
-		toast.classList.remove(type.toLowerCase());
+		toastElement.classList.remove('show');
+		toastElement.classList.remove(type.toLowerCase());
 		timeoutId = undefined;
 	}, 1500);
 };

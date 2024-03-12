@@ -42,10 +42,19 @@ const sendRequest = async (type, url, data) => {
 	return new Promise((resolve, reject) => {
 		request.onreadystatechange = () => {
 			if (request.readyState == 4) {
-				if (request.status / 100 == 2 || request.status / 100 == 3) {
-					resolve(JSON.parse(request.responseText));
-				} else if (request.status / 100 == 5 || request.status / 100 == 4) {
-					reject(JSON.parse(request.responseText));
+				statusType = Math.floor(request.status / 100);
+				if (statusType === 2 || statusType === 3) {
+					// console.log(JSON.parse(request.responseText), request.status);
+					resolve({
+						status: request.status,
+						response: JSON.parse(request.responseText),
+					});
+				} else if (statusType === 4 || statusType === 5) {
+					// console.error(JSON.parse(request.responseText), request.status);
+					reject({
+						status: request.status,
+						response: JSON.parse(request.responseText),
+					});
 				}
 			}
 		};
@@ -136,24 +145,23 @@ const server = {
 
 		socket.addEventListener('message', (event) => {
 			const data = event.data;
-			console.log('recieved data', data);
+			console.log('received data', data);
 			if (data === 'logout') {
+				// send an information message to the user
+				toastElement.classList.remove('logged-in');
+				toastMessage(
+					'You were logged out due to another login to your account',
+					TOAST_MESSAGE.INFO
+				);
+
+				localStorage.removeItem('token');
+				refresh();
 			}
 		});
 
 		socket.addEventListener('close', (event) => {
 			console.log('closing socket', event);
 			clearInterval(interval);
-
-			localStorage.removeItem('token');
-			refresh();
-
-			// and send an information message to the user
-			toast.classList.remove('logged-in');
-			toastMessage(
-				'You were logged out due to another login to your account',
-				TOAST_MESSAGE.INFO
-			);
 
 			socket = undefined;
 		});
