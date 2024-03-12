@@ -6,6 +6,15 @@ getToken = function () {
 	return localStorage.getItem('token');
 };
 
+window.onload = function () {
+	// this is for message display, needs to be done once per page load
+	toastElement = document.getElementById('toast');
+	toastElement.classList = [];
+
+	// on window load, we refresh the page to update our content div
+	refresh();
+};
+
 displayView = function (id) {
 	// the code required to display a view
 	const view = document.getElementById(id);
@@ -78,6 +87,7 @@ loadProfile = function (token) {
 };
 
 loadLoginPage = () => {
+	Router.push('/login');
 	// we display our sign up view
 	displayView('welcomeView');
 
@@ -90,15 +100,6 @@ loadLoginPage = () => {
 		e.preventDefault();
 		login(document.login.email.value, document.login.password.value);
 	});
-};
-
-window.onload = function () {
-	// this is for message display, needs to be done once per page load
-	toastElement = document.getElementById('toast');
-	toastElement.classList = [];
-
-	// on window load, we refresh the page to update our content div
-	refresh();
 };
 
 signup = function () {
@@ -147,6 +148,7 @@ signup = function () {
 };
 
 login = function (email, password) {
+	changeState('login');
 	// try to sign in the user
 	server
 		.signIn(email, password)
@@ -175,6 +177,7 @@ login = function (email, password) {
 };
 
 logout = function () {
+	changeState('logout');
 	// user wants to log out
 	// so we get the token  and log out the user from the item
 	const token = getToken();
@@ -321,7 +324,10 @@ postMessage = function (token, email) {
 /*****
 	NAVIGATION
 *****/
-changeTab = function (tab, resetProfile) {
+changeTab = function (tab, resetProfile, pushRoute) {
+	if (pushRoute !== false) {
+		Router.push('/profile/' + tab, resetProfile);
+	}
 	// in case changeTab was called from clicking the tabs, resetProfile is not set, so we set it to true
 	if (resetProfile === undefined || resetProfile === null) {
 		resetProfile = true;

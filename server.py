@@ -49,6 +49,10 @@ def close_connection(exception):
     database_helper.close_connection(exception)
 
 @app.route('/')
+@app.route('/login')
+@app.route('/profile/home')
+@app.route('/profile/browse')
+@app.route('/profile/account')
 def send_client():
     return render_template('client.html')
 

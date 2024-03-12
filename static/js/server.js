@@ -145,7 +145,7 @@ const server = {
 
 		socket.addEventListener('message', (event) => {
 			const data = event.data;
-			console.log('received data', data);
+			// console.log('received data', data);
 			if (data === 'logout') {
 				// send an information message to the user
 				toastElement.classList.remove('logged-in');
