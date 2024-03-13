@@ -25,3 +25,11 @@ CREATE TABLE IF NOT EXISTS user_session(
     PRIMARY KEY(token),
     FOREIGN KEY(user) REFERENCES user(username)
 );
+
+CREATE TABLE IF NOT EXISTS password_reset(
+    token   VARCHAR(20) NOT NULL,
+    user    VARCHAR(50) NOT NULL,
+    expires TEXT NOT NULL DEFAULT (strftime('%F %T', 'now', '+15 minutes')),
+    PRIMARY KEY(token, user),
+    FOREIGN KEY(user) REFERENCES user(username)
+);

@@ -1,5 +1,5 @@
 from flask import request, jsonify, make_response, Response
-from database_helper import get_session_by_token
+from database_helper import read_session_by_token
 
 def check_token_validity() -> Response | str:
     token = request.headers.get('Authorization')
@@ -25,7 +25,7 @@ def is_token_valid(token: str) -> bool:
     """
     if token is None:
         return False
-    session = get_session_by_token(token)
+    session = read_session_by_token(token)
     print(session)
     if not session:
         return False

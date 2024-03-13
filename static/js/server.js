@@ -1,15 +1,15 @@
 const envs = {0: 'DEV', 1: 'PROD'};
 const env = envs[0];
 
-let PORT, URL;
+let _PORT, _URL;
 if (env === 'PROD') {
-	PORT = 443;
-	URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
+	_PORT = 443;
+	_URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
 } else {
-	PORT = 5000;
-	URL = 'localhost';
+	_PORT = 5000;
+	_URL = 'localhost';
 }
-const API = `${env === 'PROD' ? 'https' : 'http'}://${URL}:${PORT}`;
+const API = `${env === 'PROD' ? 'https' : 'http'}://${_URL}:${_PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
 
 let socket;
@@ -63,10 +63,12 @@ const sendRequest = async (type, url, data) => {
 
 const server = {
 	signUp: async (data) => {
+		console.log(data);
 		return sendRequest('POST', `${API}/sign_up/`, data);
 	},
 
 	signIn: async (email, password) => {
+		console.log(email, password);
 		return sendRequest('GET', `${API}/sign_in/`, {
 			username: email,
 			password: password,
@@ -121,14 +123,27 @@ const server = {
 		});
 	},
 
+	requestPasswordReset: async (user) => {
+		return sendRequest('POST', `${API}/reset_password/`, {
+			user,
+		});
+	},
+
+	setPassword: async (token, password) => {
+		return sendRequest('POST', `${API}/set_password/`, {
+			token,
+			password,
+		});
+	},
+
 	websocket: (token) => {
 		if (socket) {
 			console.log('socket already exists');
 			return;
 		}
 		socket = new WebSocket(
-			`${env === 'PROD' ? 'wss' : 'ws'}://${URL}${
-				env === 'PROD' ? '' : `:${PORT}`
+			`${env === 'PROD' ? 'wss' : 'ws'}://${_URL}${
+				env === 'PROD' ? '' : `:${_PORT}`
 			}/websocket?token=${token}`
 		);
 		socket.addEventListener('open', () => {

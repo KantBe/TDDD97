@@ -6,7 +6,7 @@ import re, bcrypt
 from uuid import uuid4
 
 from decorators import authorized, check_token_validity
-
+from mailserver import send_password_reset_link
 import database_helper
 
 SIGNUP_KEYS = ['email', 'password', 'firstname', 'familyname', 'gender', 'city', 'country']
@@ -28,7 +28,7 @@ def websocket(socket: Server):
     if type(check) is Response:
         return check
     token = check
-    email = database_helper.get_username_by_token(token)
+    email = database_helper.read_username_by_token(token)
     
     # then we send an acknowledgement
     socket.send('received: ' + str(email))
@@ -50,6 +50,7 @@ def close_connection(exception):
 
 @app.route('/')
 @app.route('/login')
+@app.route('/signup')
 @app.route('/profile/home')
 @app.route('/profile/browse')
 @app.route('/profile/account')
@@ -81,7 +82,7 @@ def signin():
     # status code is only < 400 if user is logged in
     if status_code < 400:
         auth_token = generate_token()
-        database_helper.store_token(auth_token, username)
+        database_helper.create_token(auth_token, username)
 
     response = {}
     response['message'] = message
@@ -102,8 +103,8 @@ def get_all_user_info(username):
     - 500: an error occured
     """
     response = {}
-    response['info'] = database_helper.get_all_user_info(username)
-    response['session'] = database_helper.get_sessions_by_user(username)
+    response['info'] = database_helper.read_all_user_info(username)
+    response['session'] = database_helper.read_sessions_by_user(username)
     res = jsonify(response)
     res.status_code = 200
     return res
@@ -155,7 +156,7 @@ def signout(token):
     """
     # check if user with this token is logged in
     # and log out user
-    email = database_helper.get_username_by_token(token)
+    email = database_helper.read_username_by_token(token)
     close_socket(email, True)
     
     database_helper.delete_session_by_token(token)
@@ -323,8 +324,8 @@ def post_message(token):
     if status_code < 400 and data['message'] is None or str(data['message']).strip() == '':
         status_code, message = (400, 'Message is empty')
     if status_code < 400:
-        author = database_helper.get_username_by_token(token)
-        database_helper.insert_message(author, data['message'], data['email'])
+        author = database_helper.read_username_by_token(token)
+        database_helper.create_message(author, data['message'], data['email'])
         status_code = 201
 
     response = {}
@@ -332,6 +333,83 @@ def post_message(token):
     res = jsonify(response)
     res.status_code = status_code
     return res
+
+@app.post('/reset_password/')
+@cross_origin()
+def reset_password():
+    """
+    #### status codes:
+    - 200: request successful
+    - 400: `user` not provided
+    - 404: user does not exist
+    - 405: wrong method (e.g. post, put or delete)
+    - 500: an error occured
+    """
+    data = request.get_json()
+    
+    status_code, message = check_keys(['user'], data)
+
+    if status_code < 400:
+        status_code = status_code if database_helper.user_exists(data['user']) else 404
+        if status_code < 400:
+            database_helper.delete_password_reset_by_user(data['user'])
+            token = generate_token()
+            database_helper.create_password_reset(token, data['user'])
+            # send email
+            send_password_reset_link(data['user'], token)
+            status_code = 201
+            message = 'Password reset requested'
+        else:
+            message = 'Given user does not exist'
+
+    response = {}
+    response['message'] = message
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
+
+@app.post('/set_password/')
+@cross_origin()
+def set_password():
+    data = request.get_json()
+    status_code, message = check_keys(['token', 'password'], data)
+
+    if status_code < 400:
+        status_code, message = validate_password(data['password'])
+    
+    if status_code < 400:
+        ute = database_helper.read_password_reset_by_token(data['token'])
+        if not ute:
+            status_code = 404
+            message = 'Token is invalid'
+        else:
+            user = ute[0]
+    
+    if status_code < 400:
+        password = encrypt_password(data['password']).decode('utf-8')
+        database_helper.update_password_by_username(user, password)
+        database_helper.delete_password_reset_by_token(data['token'])
+        message = 'Password updated successfully'
+    
+    response = {}
+    response['message'] = message
+    res = jsonify(response)
+    res.status_code = status_code
+    return res
+
+@app.route('/reset_password/<token>')
+@cross_origin()
+def reset_password_page(token):
+    print(token)
+    ute = database_helper.read_password_reset_by_token(token)
+    if not ute:
+        return render_template('invalid-token.html')
+    return render_template('password-reset.html')
+
+@app.route('/request_password_reset')
+@cross_origin()
+def request_password_reset():
+    return render_template('request-password-reset.html')
 
 ###########################
 # HELPER FUNCTIONS
@@ -391,7 +469,7 @@ def change_user_password(token, data) -> tuple[int, str]:
     Returns `(success: boolean, success_message: string)`
     """
     # this should always return values, as the token is valid
-    user, password = database_helper.get_user_and_password_by_token(token)
+    user, password = database_helper.read_user_and_password_by_token(token)
 
     success, message = check_password(data['oldpassword'], password)
     if not success:
@@ -416,7 +494,7 @@ def login_user(username: str, password: str | bytes) -> tuple[int, str]:
     - 401 when username or password are wrong
     """
     # up = username + password
-    up = database_helper.get_user_and_password_by_username(username)
+    up = database_helper.read_user_and_password_by_username(username)
     
     if up:
         username, checked_password = up
@@ -462,8 +540,8 @@ def get_user_messages(token: str, _user=None) -> tuple[int, str, list]:
     if _user and not database_helper.user_exists(_user):
         return (404, 'No user with this email exists', messages)
     
-    user = database_helper.get_username_by_token(token)
-    raw_messages = database_helper.get_messages_writer_and_text_by_user(_user if _user else user)
+    user = database_helper.read_username_by_token(token)
+    raw_messages = database_helper.read_messages_writer_and_text_by_user(_user if _user else user)
     message = 'Successfully retreived messages for user ' + user
     for m in raw_messages:
         messages.append({'writer': m[0], 'message': m[1]})
@@ -478,12 +556,12 @@ def get_user_data(token: str, _user=None) -> tuple[int, str, list]:
     """
     user_data = []
 
-    user = database_helper.get_username_by_token(token)
+    user = database_helper.read_username_by_token(token)
 
     if _user and not database_helper.user_exists(_user):
         return (404, 'No user with this email exists', user_data)
     
-    raw_data = database_helper.get_all_user_info(_user if _user else user)
+    raw_data = database_helper.read_all_user_info(_user if _user else user)
 
     message = 'Successfully retreived data for user ' + user
     user_data = raw_data[:1] + raw_data[2:]

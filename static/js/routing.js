@@ -1,9 +1,9 @@
 let initialized;
 
 let currentState;
-const url = {
-	login: '/profile/home',
-	logout: '/login',
+const urls = {
+	login: '/profile/home', // user is logged in
+	logout: '/login', // user is logged out
 };
 
 window.addEventListener('popstate', (event) => {
@@ -11,38 +11,47 @@ window.addEventListener('popstate', (event) => {
 		history.replaceState(
 			{currentState, resetProfile: false},
 			'',
-			url[currentState]
+			urls[currentState]
 		);
 	}
 
-	const token = getToken();
+	if (currentState === 'login') {
+		const token = getToken();
 
-	let signedIn;
-	server
-		.checkToken(token)
-		.then(() => {
-			// logged in
-			signedIn = true;
-		})
-		.catch(() => {
-			// logged out
-			signedIn = false;
-		})
-		.finally(() => {
-			// changed state
-			if (signedIn) {
-				changeTab(
-					document.location.pathname.replace('/profile/', ''),
-					event.state.resetProfile,
-					false
-				);
-			}
-		});
+		let signedIn;
+		server
+			.checkToken(token)
+			.then(() => {
+				// logged in
+				signedIn = true;
+			})
+			.catch(() => {
+				// logged out
+				signedIn = false;
+			})
+			.finally(() => {
+				// changed state
+				if (signedIn) {
+					changeTab(
+						document.location.pathname.replace('/profile/', ''),
+						event.state.profile,
+						false
+					);
+				}
+			});
+	} else {
+		if (document.location.pathname === '/login') {
+			loadLoginPage(undefined, false);
+		} else {
+			loadSignupPage(false);
+		}
+	}
 });
 
 const Router = {
-	push: (route, resetProfile) => {
+	push: (route, profile) => {
 		const signinState = route.includes('profile') ? 'login' : 'logout';
+
 		if (!initialized) {
 			currentState = signinState;
 			initialized = true;
@@ -50,7 +59,7 @@ const Router = {
 			history.replaceState(
 				{
 					signinState,
-					resetProfile,
+					profile,
 				},
 				'',
 				route
@@ -59,7 +68,7 @@ const Router = {
 			history.pushState(
 				{
 					signinState,
-					resetProfile,
+					profile,
 				},
 				'',
 				route

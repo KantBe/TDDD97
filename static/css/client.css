@@ -5,46 +5,31 @@ html, body {
   margin: 0;
 }
 
+body, body * {
+  font-family: 'Roboto';
+  font-size: 0.9rem;
+}
+
+.hidden, [data-show="false"], .container[data-show="false"] {
+  display: none;
+}
+
 #content {
   width: 100%;
   height: 100%;
   position: absolute;
-}
-
-.content {
-  background: #333;
-  color: white;
-}
-
-.content button, .content input, .content textarea {
-  height: 40px;
-  padding: 5px;
-  background: none;
-  color: white;
-  outline: none;
-  border: 1px solid #666;
-  border-radius: 10px;
-}
-.content form[name="search"] button {
-  height: 100%;
-}
-.content form[name="search"] input {
-  flex-grow: 1;
-}
-form[name="search"] {
-  display: flex;
+  display: grid;
   align-items: center;
-  column-gap: 10px;
+  overflow: hidden;
 }
+
 button {
   cursor: pointer;
 }
-.content button:hover {
-  background: #444;
-}
-.content button:active {
-  background: #222;
-}
+
+/*********
+  TOAST
+*********/
 
 #toast {
   position: absolute;
@@ -73,67 +58,54 @@ button {
   box-shadow: 0px 0px 10px 3px #292929;
 }
 
-.hidden, [data-show="false"], .container[data-show="false"] {
-  display: none;
-}
-
-body, body * {
-  font-family: 'Roboto';
-  font-size: 0.9rem;
-}
-
-/***
+/****************
   WELCOME PAGE
-***/
-.container {
-  margin: 100px auto 0 auto;
-  width: 600px;
-  height: 400px;
+****************/
+#content > .container {
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
 
   display: flex;
-  column-gap: 10px;
+  align-items: center;
 }
-
-/*
-.container div, .container form {
-  outline: 1px solid black;
-}
-*/
 
 .logo {
-  width: 340px;
+  width: 50%;
+  text-align: center;
+}
+
+@media screen and (min-width: 768px) {
+  .logo {
+    text-align: right;
+  }
 }
 
 .login-container {
-  width: 250px;
+  width: 35%;
   display: flex;
   row-gap: 10px;
   flex-direction: column;
 }
 
-.login-container > form {
-  min-height: 100px;
-
-  margin-bottom: 0;
-  display: grid;
-  justify-content: space-between;
-  align-content: center;
-  row-gap: 5px;
-  grid-template-columns: auto 150px;
-  position: relative;
+.login-container .btn {
+  width: 100%;
+  margin: 10px auto;
+  text-transform: uppercase;
 }
 
-.login-container > #signup {
-  align-content: flex-end;
-  padding-bottom: 25px;
-  
-  flex-grow: 1;
+.login-container > form {
+  margin-bottom: 0;
+}
+
+.login-container a, .login-container a:not([href]):not([class]) {
+  float: right;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .login-container > form > button {
-  position: absolute;
-  right: 0;
-  bottom: 0;
+  text-transform: uppercase;
 }
 
 .login-container > form h3 {
@@ -142,20 +114,42 @@ body, body * {
   margin-top: 0;
 }
 
-/***
-  PROFILE PAGE
-***/
+
+/***********
+  PROFILE
+***********/
+.content {
+  background: #333;
+  color: white;
+}
+
+.content button, .content input, .content textarea {
+  height: 40px;
+  padding: 5px;
+  background: none;
+  color: white;
+  outline: none;
+  border: 1px solid #666;
+  border-radius: 10px;
+}
+.content button:hover {
+  background: #444;
+}
+.content button:active {
+  background: #222;
+}
 
 .content > .container {
   flex-direction: column;
-  margin-top: 0;
   height: calc(100vh - 50px);
 }
 
-.navbar {
+#content .navbar {
   position: absolute;
   top: 0;
   left: 0;
+  padding: 0;
+  margin: 0;
   width: 100vw;
   display: flex;
   justify-content: center;
@@ -165,7 +159,8 @@ body, body * {
 .navbar ul {
   list-style-type: none;
   
-  width: 50%;
+  max-width: 540px;
+  width: 100%;
   height: 50px; 
   padding: 0;
   margin: 0;
@@ -198,7 +193,7 @@ body, body * {
 
 .new_message textarea {
   resize: none;
-  width: calc(100% - 12px);
+  width: 100%;
   height: fit-content;
 }
 .new_message button {
@@ -215,15 +210,16 @@ body, body * {
   font-size: 1.1rem;
 }
 .messages {
-  overflow-y: auto;
+  height: calc(100% - 100px);
 }
 
-/**
-  PERSONAL INFORMATION
-**/
+/************
+  HOME TAB
+************/
 .personal_information {
   margin-bottom: 10px;
-  margin-top: 1em;
+  margin-top: 10px;
+  height: 80px;
 
   display: flex;
   column-gap: 10px;
@@ -252,12 +248,17 @@ body, body * {
 
 .message_history {
   padding-bottom: 10px;
+  max-height: calc(100% - 190px);
+  overflow-y: auto;
 }
 .message_history .message {
-  width: calc(100% - 22px);
+  width: 80%;
   padding: 10px;
   border: 1px solid #666;
   margin-top: 5px;
+}
+.message_history .message.other {
+  margin-left: auto;
 }
 
 .message_history > .message:first-child {
@@ -279,10 +280,42 @@ body, body * {
   text-decoration: underline;
 }
 
-/***
+/*************
+  SEARCH TAB
+*************/
+.content form[name="search"] button {
+  height: 100%;
+  padding: 5px 15px;
+}
+.content form[name="search"] input {
+  flex-grow: 1;
+}
+.content form[name="search"] {
+  display: flex;
+  align-items: center;
+  column-gap: 10px;
+}
+
+/***************
   ACCOUNT TAB
-***/
+***************/
 .password-reset {
   display: grid;
   row-gap: 5px;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+#account h2, #account h3 {
+  text-align: center;
+}
+
+#account .signout {
+  max-width: 540px;
+  margin: 30px auto 0 auto;
+  width: 100%;
+}
+
+.btn.btn-signout {
+  width: 100%;
 }

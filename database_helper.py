@@ -39,34 +39,34 @@ def query_db(query, args=(), one=False, commit=False):
 def create_user(user: tuple[str, str, str, str, str, str, str]):
     return query_db("INSERT INTO user VALUES(?, ?, ?, ?, ?, ?, ?)", args=user, commit=True)
 
-def get_user_by_username(username):
+def read_user_by_username(username):
     return query_db("SELECT username FROM user WHERE username LIKE '%s'" % (username), one=True)
 
 def user_exists(username):
-    return True if get_user_by_username(username) else False
+    return True if read_user_by_username(username) else False
 
-def get_user_and_password_by_username(username):
+def read_user_and_password_by_username(username):
     return query_db("SELECT username, password FROM user WHERE username LIKE '%s'" % (username), one=True)
 
-def get_user_and_password_by_token(token):
+def read_user_and_password_by_token(token):
     return query_db("SELECT u.username, u.password FROM user u "\
         + "JOIN user_session us ON us.user = u.username WHERE us.token LIKE '%s'" % (token), one=True)
 
-def get_username_by_token(token):
+def read_username_by_token(token):
     return query_db("SELECT u.username FROM user u "\
         + "JOIN user_session us ON us.user = u.username WHERE us.token LIKE '%s'" % (token), one=True)[0]
 
 def update_password_by_username(username, password):
     return query_db("UPDATE user SET password = '%s' WHERE username LIKE '%s'" % (password, username), commit=True)
 
-def get_all_user_info(username):
+def read_all_user_info(username):
     return query_db("SELECT * FROM user WHERE username LIKE '%s'" % (username), one=True)
 
 #############
 #   SESSION
 #############
 
-def store_token(token, user):
+def create_token(token, user):
     """
     This method is called if the login was successfully, so the token is stored successfully.
     
@@ -78,10 +78,10 @@ def store_token(token, user):
     query_db(sql, args=data, commit=True)
     return (True, 'Token stored in database')
 
-def get_sessions_by_user(username):
+def read_sessions_by_user(username):
     return query_db("SELECT * FROM user_session WHERE user LIKE '%s'" % username, one=False)
 
-def get_session_by_token(token):
+def read_session_by_token(token):
     return query_db("SELECT * FROM user_session WHERE token LIKE '%s'" % token, one=True)#
 
 def delete_session_by_user(username):
@@ -99,8 +99,26 @@ def delete_session_by_token(token):
 #   POSTS
 ###########
 
-def get_messages_writer_and_text_by_user(user):
+def read_messages_writer_and_text_by_user(user):
     return query_db("SELECT writer, posttext FROM post WHERE user LIKE '%s' ORDER BY id ASC" % (user))
 
-def insert_message(writer, message, user):
+def create_message(writer, message, user):
     return query_db("INSERT INTO post(writer, posttext, user) VALUES(?, ?, ?)", args=(writer, message, user), commit=True)
+
+###########
+#   PASSWORD RESET
+###########
+def create_password_reset(token, user):
+    sql = "INSERT INTO password_reset(token, user, expires) VALUES(?, ?, ?)"
+    data = (token, user, datetime.datetime.now() + datetime.timedelta(minutes=15))
+    return query_db(sql, args=data, commit=True)
+
+def read_password_reset_by_token(token):
+    now = datetime.datetime.now()
+    return query_db("SELECT user, token, expires FROM password_reset WHERE token = '%s' AND expires > '%s'" % (token, now), one=True)
+
+def delete_password_reset_by_user(user):
+    return query_db("DELETE FROM password_reset WHERE user = '%s'" % user, commit=True)
+
+def delete_password_reset_by_token(token):
+    return query_db("DELETE FROM password_reset WHERE token = '%s'" % token, commit=True)
