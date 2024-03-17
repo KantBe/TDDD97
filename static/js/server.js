@@ -163,11 +163,8 @@ const server = {
 			// console.log('received data', data);
 			if (data === 'logout') {
 				// send an information message to the user
-				toastElement.classList.remove('logged-in');
-				toastMessage(
-					'You were logged out due to another login to your account',
-					TOAST_MESSAGE.INFO
-				);
+				toast.logout();
+				toast.info('You were logged out due to another login to your account');
 
 				localStorage.removeItem('token');
 				refresh();

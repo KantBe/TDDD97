@@ -58,7 +58,7 @@ refresh = function (signupPage) {
 loadProfile = function (token) {
 	// update view and message display
 	displayView('profileView');
-	toastElement.classList.add('logged-in');
+	toast.login();
 
 	// we clear all our test data
 	clearHistory();
@@ -202,7 +202,7 @@ logout = function () {
 		refresh();
 
 		// and send a confirmation message to the user
-		toastElement.classList.remove('logged-in');
+		toast.logout();
 		toast.success('User logged out successfully');
 	});
 };

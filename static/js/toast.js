@@ -13,14 +13,30 @@ const toast = {
 	info: (message) => {
 		toastMessage(message, TOAST_MESSAGE.INFO);
 	},
+	login: () => {
+		if (!toastElement) {
+			init();
+		}
+		toastElement.classList.add('logged-in');
+	},
+	logout: () => {
+		if (!toastElement) {
+			init();
+		}
+		toastElement.classList.remove('logged-in');
+	},
+};
+
+const init = () => {
+	toastElement = document.createElement('div');
+	toastElement.classList = [];
+	toastElement.id = 'toast';
+	document.body.appendChild(toastElement);
 };
 
 toastMessage = function (message, type) {
 	if (!toastElement) {
-		toastElement = document.createElement('div');
-		toastElement.classList = [];
-		toastElement.id = 'toast';
-		document.body.appendChild(toastElement);
+		init();
 	}
 	// we either log or error the toast as well
 	(console[type] || console.log)(message);
