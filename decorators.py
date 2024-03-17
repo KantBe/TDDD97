@@ -1,7 +1,7 @@
 from flask import request, jsonify, make_response, Response
 from database_helper import read_session_by_token
 
-def check_token_validity() -> Response | str:
+def check_token_validity() -> "Response | str":
     token = request.headers.get('Authorization')
     if not token and request.method != 'GET':
         data = request.get_json()

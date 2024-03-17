@@ -325,7 +325,7 @@ def post_message(token):
         status_code, message = (400, 'Message is empty')
     if status_code < 400:
         author = database_helper.read_username_by_token(token)
-        database_helper.create_message(author, data['message'], data['email'])
+        database_helper.create_message(author, data['message'], data['email'], data['latitude'], data['longitude'])
         status_code = 201
 
     response = {}
@@ -485,7 +485,7 @@ def change_user_password(token, data) -> tuple[int, str]:
 
 
 # def login_user(username: str, password: str | bytes):
-def login_user(username: str, password: str | bytes) -> tuple[int, str]:
+def login_user(username: str, password: "str | bytes") -> tuple[int, str]:
     """
     Tries to login the user with the given username and password.
     Returns `(status_code: int, success_message: string)`
@@ -504,7 +504,7 @@ def login_user(username: str, password: str | bytes) -> tuple[int, str]:
         message = 'Invalid username'
     return (200 if success else 401, message)
 
-def encrypt_password(password: str | bytes) -> bytes:
+def encrypt_password(password: "str | bytes") -> bytes:
     """
     Encrypts the password and returns it.
     """
@@ -512,7 +512,7 @@ def encrypt_password(password: str | bytes) -> bytes:
         password = password.encode('utf-8')
     return bcrypt.hashpw(password, bcrypt.gensalt())
 
-def check_password(password: str | bytes, encrypted_password: str | bytes) -> tuple[bool, str]:
+def check_password(password: "str | bytes", encrypted_password: "str | bytes") -> tuple[bool, str]:
     """
     Checks if `password` (unencrypted) matches with `encrypted_password` (encrypted).
     Returns `(success: bool, success_message: string)`
@@ -544,7 +544,7 @@ def get_user_messages(token: str, _user=None) -> tuple[int, str, list]:
     raw_messages = database_helper.read_messages_writer_and_text_by_user(_user if _user else user)
     message = 'Successfully retreived messages for user ' + user
     for m in raw_messages:
-        messages.append({'writer': m[0], 'message': m[1]})
+        messages.append({'writer': m[0], 'message': m[1], 'latitude': m[2], 'longitude': m[3]})
 
     return (200, message, messages)
 

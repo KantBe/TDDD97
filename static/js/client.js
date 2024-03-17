@@ -1,6 +1,8 @@
 const MIN_LENGTH_PASSWORD = 8;
 const PROFILE_TABS = ['home', 'browse', 'account'];
 
+var position = {latitude:0, longitude:0};
+
 getToken = function () {
 	return localStorage.getItem('token');
 };
@@ -274,7 +276,7 @@ reloadMessages = function (token) {
 		});
 };
 
-displayMessageHistory = (data, email) => {
+displayMessageHistory = async (data, email) => {
 	// and add it to the message history
 	const history = document.getElementById('history');
 	for (const message of data) {
@@ -283,9 +285,11 @@ displayMessageHistory = (data, email) => {
 			email === message.writer ? 'own' : 'other'
 		}`;
 
+		geodata = await convertGeocode(message.latitude, message.longitude);
+
 		const messageProfile = document.createElement('div');
 		messageProfile.className = 'profile_information';
-		messageProfile.innerHTML = `<span>${message.writer}</span> posted`;
+		messageProfile.innerHTML = `<span>${message.writer}</span> posted from <span>${geodata.city}</span>`;
 		messageContainer.appendChild(messageProfile);
 
 		const messageContent = document.createElement('div');
@@ -296,6 +300,15 @@ displayMessageHistory = (data, email) => {
 		history.appendChild(messageContainer);
 	}
 };
+
+convertGeocode = function (latitude, longitude) {
+	return fetchAsync('https://geocode.xyz/'+latitude+','+longitude+'?json=1');
+}
+
+fetchAsync = async function (url) {
+  let response = await fetch(url);
+  return response.json();
+}
 
 invalid = function (element, message) {
 	// mark a field as invalid
@@ -318,9 +331,15 @@ postMessage = function (token, email) {
 	if (!content || content.trim() === '') {
 		return;
 	}
+	// then we get the position
+	if (navigator.geolocation) {
+		navigator.geolocation.getCurrentPosition(getPosition);
+  	} else {
+    	console.log('location', "Geolocation is not supported by this browser.");
+  	}
 	// then we post the message
 	server
-		.postMessage(token, content, email)
+		.postMessage(token, content, email, position)
 		.then((res) => {
 			// on success, we update all values and reload the messages
 			document.post.reset();
@@ -335,6 +354,11 @@ postMessage = function (token, email) {
 			return;
 		});
 };
+
+getPosition = function(currentPosition) {
+	position.latitude = currentPosition.coords.latitude;
+	position.longitude = currentPosition.coords.longitude;
+}
 
 /*****
 	NAVIGATION

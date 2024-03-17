@@ -7,7 +7,7 @@ if (env === 'PROD') {
 	_URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
 } else {
 	_PORT = 5000;
-	_URL = 'localhost';
+	_URL = '127.0.0.1';
 }
 const API = `${env === 'PROD' ? 'https' : 'http'}://${_URL}:${_PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
@@ -96,11 +96,13 @@ const server = {
 		});
 	},
 
-	postMessage: async (token, content, email) => {
+	postMessage: async (token, content, email, position) => {
 		return sendRequest('POST', `${API}/post_message/`, {
 			token: token,
 			message: content,
 			email: email,
+			latitude: position.latitude,
+			longitude: position.longitude,
 		});
 	},
 
