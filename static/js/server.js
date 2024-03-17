@@ -7,7 +7,7 @@ if (env === 'PROD') {
 	_URL = 'tddd97-b11-f93163caa8f5.herokuapp.com';
 } else {
 	_PORT = 5000;
-	_URL = 'localhost';
+	_URL = '127.0.0.1';
 }
 const API = `${env === 'PROD' ? 'https' : 'http'}://${_URL}:${_PORT}`;
 const requestTypes = ['GET', 'POST', 'UPDATE', 'DELETE'];
