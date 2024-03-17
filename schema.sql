@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS post(
     writer   VARCHAR(50),
     user     VARCHAR(50),
     posttext VARCHAR(255),
+    userlat  VARCHAR(255),
+    userlong VARCHAR(255),
     FOREIGN KEY(writer) REFERENCES user(username)
     FOREIGN KEY(user)   REFERENCES user(username)
 );

@@ -100,10 +100,10 @@ def delete_session_by_token(token):
 ###########
 
 def read_messages_writer_and_text_by_user(user):
-    return query_db("SELECT writer, posttext FROM post WHERE user LIKE '%s' ORDER BY id ASC" % (user))
+    return query_db("SELECT writer, posttext, userlat, userlong FROM post WHERE user LIKE '%s' ORDER BY id ASC" % (user))
 
-def create_message(writer, message, user):
-    return query_db("INSERT INTO post(writer, posttext, user) VALUES(?, ?, ?)", args=(writer, message, user), commit=True)
+def create_message(writer, message, user, latitude, longitude):
+    return query_db("INSERT INTO post(writer, posttext, user, userlat, userlong) VALUES(?, ?, ?, ?, ?)", args=(writer, message, user, latitude, longitude), commit=True)
 
 ###########
 #   PASSWORD RESET

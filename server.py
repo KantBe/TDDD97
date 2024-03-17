@@ -248,6 +248,7 @@ def get_user_messages_by_email(token):
     
     response = {}
     response['message'] = message
+    print(messages)
     response['data'] = messages
     res = jsonify(response)
     res.status_code = status_code
@@ -325,7 +326,7 @@ def post_message(token):
         status_code, message = (400, 'Message is empty')
     if status_code < 400:
         author = database_helper.read_username_by_token(token)
-        database_helper.create_message(author, data['message'], data['email'])
+        database_helper.create_message(author, data['message'], data['email'], data['latitude'], data['longitude'])
         status_code = 201
 
     response = {}
@@ -544,7 +545,7 @@ def get_user_messages(token: str, _user=None) -> tuple[int, str, list]:
     raw_messages = database_helper.read_messages_writer_and_text_by_user(_user if _user else user)
     message = 'Successfully retreived messages for user ' + user
     for m in raw_messages:
-        messages.append({'writer': m[0], 'message': m[1]})
+        messages.append({'writer': m[0], 'message': m[1], 'latitude': m[2], 'longitude': m[3]})
 
     return (200, message, messages)
 

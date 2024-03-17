@@ -96,11 +96,13 @@ const server = {
 		});
 	},
 
-	postMessage: async (token, content, email) => {
+	postMessage: async (token, content, email, position) => {
 		return sendRequest('POST', `${API}/post_message/`, {
 			token: token,
 			message: content,
 			email: email,
+			latitude: position.latitude,
+			longitude: position.longitude,
 		});
 	},
 
