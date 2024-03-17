@@ -248,7 +248,6 @@ def get_user_messages_by_email(token):
     
     response = {}
     response['message'] = message
-    print(messages)
     response['data'] = messages
     res = jsonify(response)
     res.status_code = status_code

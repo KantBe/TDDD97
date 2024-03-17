@@ -276,7 +276,7 @@ reloadMessages = function (token) {
 		});
 };
 
-displayMessageHistory = (data, email) => {
+displayMessageHistory = async (data, email) => {
 	// and add it to the message history
 	const history = document.getElementById('history');
 	for (const message of data) {
@@ -285,10 +285,7 @@ displayMessageHistory = (data, email) => {
 			email === message.writer ? 'own' : 'other'
 		}`;
 
-		geodata = convertGeocode(message.latitude, message.longitude);
-		console.log(geodata);
-		//console.log(JSON.parse(convertGeocode(message.latitude, message.longitude)));
-		//console.log(JSON.parse(geodata).city);
+		geodata = await convertGeocode(message.latitude, message.longitude);
 
 		const messageProfile = document.createElement('div');
 		messageProfile.className = 'profile_information';
@@ -310,8 +307,7 @@ convertGeocode = function (latitude, longitude) {
 
 fetchAsync = async function (url) {
   let response = await fetch(url);
-  let data = await response.json();
-  return JSON.parse(data);
+  return response.json();
 }
 
 invalid = function (element, message) {
