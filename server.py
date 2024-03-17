@@ -485,7 +485,7 @@ def change_user_password(token, data) -> tuple[int, str]:
 
 
 # def login_user(username: str, password: str | bytes):
-def login_user(username: str, password: str | bytes) -> tuple[int, str]:
+def login_user(username: str, password: "str | bytes") -> tuple[int, str]:
     """
     Tries to login the user with the given username and password.
     Returns `(status_code: int, success_message: string)`
@@ -504,7 +504,7 @@ def login_user(username: str, password: str | bytes) -> tuple[int, str]:
         message = 'Invalid username'
     return (200 if success else 401, message)
 
-def encrypt_password(password: str | bytes) -> bytes:
+def encrypt_password(password: "str | bytes") -> bytes:
     """
     Encrypts the password and returns it.
     """
@@ -512,7 +512,7 @@ def encrypt_password(password: str | bytes) -> bytes:
         password = password.encode('utf-8')
     return bcrypt.hashpw(password, bcrypt.gensalt())
 
-def check_password(password: str | bytes, encrypted_password: str | bytes) -> tuple[bool, str]:
+def check_password(password: "str | bytes", encrypted_password: "str | bytes") -> tuple[bool, str]:
     """
     Checks if `password` (unencrypted) matches with `encrypted_password` (encrypted).
     Returns `(success: bool, success_message: string)`
