@@ -12,8 +12,6 @@ flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
 # creds = flow.run_local_server(port=0)
 
 def send_password_reset_link(to, token):
-  return
-  service = build('gmail', 'v1', credentials=creds)
   # Create the plain-text and HTML version of your message
   text = """\
   Hi,
@@ -23,6 +21,8 @@ def send_password_reset_link(to, token):
   If that wasn't you, you can savely ignore this email.
   If you did request a password reset, here is your link:
   """ + 'http://localhost:5000/reset_password/' + token
+  print(text)
+  return
   message = EmailMessage()
   message.set_content(text)
   
@@ -32,6 +32,7 @@ def send_password_reset_link(to, token):
   message["To"] = to
   create_message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
+  service = build('gmail', 'v1', credentials=creds)
   try:
       message = (service.users().messages().send(userId="me", body=create_message).execute())
       print(F'sent message to {message} Message Id: {message["id"]}')
