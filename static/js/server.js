@@ -1,5 +1,5 @@
 const envs = {0: 'DEV', 1: 'PROD'};
-const env = envs[1];
+const env = envs[0];
 
 let _PORT, _URL;
 if (env === 'PROD') {

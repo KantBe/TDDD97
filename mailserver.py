@@ -1,15 +1,18 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import base64
+
+from email.message import EmailMessage
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from requests import HTTPError
+
+SCOPES = [
+        "https://www.googleapis.com/auth/gmail.send"
+    ]
+flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+creds = flow.run_local_server(port=0)
 
 def send_password_reset_link(to, token):
-  sender_email = "noreply@twidder.com"
-
-  message = MIMEMultipart("alternative")
-  message["Subject"] = "Password reset"
-  message["From"] = sender_email
-  message["To"] = to
-
+  service = build('gmail', 'v1', credentials=creds)
   # Create the plain-text and HTML version of your message
   text = """\
   Hi,
@@ -19,17 +22,18 @@ def send_password_reset_link(to, token):
   If that wasn't you, you can savely ignore this email.
   If you did request a password reset, here is your link:
   """ + 'http://localhost:5000/reset_password/' + token
+  message = EmailMessage()
+  message.set_content(text)
+  
+  message["Subject"] = "Password reset"
+  # this doesn't work with google api sadly
+  # message["From"] = "noreply@twidder.com"
+  message["To"] = to
+  create_message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
-  # Turn these into plain/html MIMEText objects
-  part1 = MIMEText(text, "plain")
-
-  # Add HTML/plain-text parts to MIMEMultipart message
-  # The email client will try to render the last part first
-  message.attach(part1)
-
-
-  with smtplib.SMTP('localhost', port=1025) as server:
-    server.sendmail(
-        sender_email, to, message.as_string()
-    )
-    server.quit()
+  try:
+      message = (service.users().messages().send(userId="me", body=create_message).execute())
+      print(F'sent message to {message} Message Id: {message["id"]}')
+  except HTTPError as error:
+      print(F'An error occurred: {error}')
+      message = None
