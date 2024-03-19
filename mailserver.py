@@ -9,9 +9,10 @@ SCOPES = [
         "https://www.googleapis.com/auth/gmail.send"
     ]
 flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-creds = flow.run_local_server(port=0)
+# creds = flow.run_local_server(port=0)
 
 def send_password_reset_link(to, token):
+  return
   service = build('gmail', 'v1', credentials=creds)
   # Create the plain-text and HTML version of your message
   text = """\
