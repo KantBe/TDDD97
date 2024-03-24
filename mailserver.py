@@ -9,25 +9,28 @@ SCOPES = [
         "https://www.googleapis.com/auth/gmail.send"
     ]
 flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-# creds = flow.run_local_server(port=0)
+creds = flow.run_local_server(port=0)
 
 def send_password_reset_link(to, token):
   # Create the plain-text and HTML version of your message
   text = """\
-  Hi,
-  How are you?
-
-  Someone has recently requested a password reset for your account.
-  If that wasn't you, you can savely ignore this email.
-  If you did request a password reset, here is your link:
-  """ + 'http://localhost:5000/reset_password/' + token
+Hi,
+How are you?
+   
+Someone has recently requested a password reset for your account.
+If that wasn't you, you can savely ignore this email.\n
+If you did request a password reset, here is your link:
+""" + 'http://localhost:5000/reset_password/' + token + \
+"""\n\
+Best regards,
+Your Twidder Team
+"""
   print(text)
-  return
   message = EmailMessage()
   message.set_content(text)
   
   message["Subject"] = "Password reset"
-  # this doesn't work with google api sadly
+  # this doesn't work with google api sadly :(
   # message["From"] = "noreply@twidder.com"
   message["To"] = to
   create_message = {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
