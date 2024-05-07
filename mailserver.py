@@ -20,7 +20,7 @@ How are you?
 Someone has recently requested a password reset for your account.
 If that wasn't you, you can savely ignore this email.\n
 If you did request a password reset, here is your link:
-""" + 'http://localhost:5000/reset_password/' + token + \
+""" + 'http://127.0.0.1:5000/reset_password/' + token + \
 """\n\
 Best regards,
 Your Twidder Team
